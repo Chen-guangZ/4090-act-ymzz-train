@@ -141,15 +141,17 @@ def author_observed_pose(stage, builder, state, level):
         cache.Clear()
 
 
-def slide(stage, path, parent, child, origin, axis, sign, limit, stiffness, damping, max_force):
+def slide(stage, path, parent, child, origin, axis, limit, stiffness, damping, max_force,
+          parent_yaw=0.0, child_yaw=0.0):
     slider = UsdPhysics.PrismaticJoint.Define(stage, path)
     slider.CreateBody0Rel().SetTargets([parent])
     slider.CreateBody1Rel().SetTargets([child])
     slider.CreateLocalPos0Attr(Gf.Vec3f(*origin))
-    if sign < 0:
-        rotation = Gf.Quatf(0, Gf.Vec3f(0, 0, 1))
-        slider.CreateLocalRot0Attr(rotation)
-        slider.CreateLocalRot1Attr(rotation)
+    for yaw, attr in ((parent_yaw, slider.CreateLocalRot0Attr), (child_yaw, slider.CreateLocalRot1Attr)):
+        if yaw == 180.0:
+            attr(Gf.Quatf(0.0, Gf.Vec3f(0, 0, 1)))
+        elif yaw:
+            attr(Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 0, 1), yaw).GetQuat()))
     slider.CreateAxisAttr(axis)
     slider.CreateLowerLimitAttr(0.0)
     slider.CreateUpperLimitAttr(limit)
@@ -162,7 +164,7 @@ def slide(stage, path, parent, child, origin, axis, sign, limit, stiffness, damp
     drive.CreateTargetPositionAttr(limit)
 
 
-def add_fingers(stage, wrist_path, wrist_world, tool_length, friction, contact_dim, torsion):
+def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, contact_dim, torsion, coupled_jaws):
     base = "/World/Robot/GripperParts"
     UsdGeom.Xform.Define(stage, base)
     material = UsdShade.Material.Define(stage, "/World/FingerPadMaterial")
@@ -170,14 +172,16 @@ def add_fingers(stage, wrist_path, wrist_world, tool_length, friction, contact_d
     physics_material.CreateStaticFrictionAttr(friction)
     physics_material.CreateDynamicFrictionAttr(friction)
     material.GetPrim().CreateAttribute("newton:torsionalFriction", Sdf.ValueTypeNames.Float).Set(torsion)
+    rotation = Gf.Rotation(Gf.Vec3d(0, 0, 1), pad_yaw).GetQuat()
+    level = matrix_from_pose([0, 0, 0], [*rotation.GetImaginary(), rotation.GetReal()])
+    closing_axis = level[:3, 0]
     for name, direction in (("LeftFinger", -1), ("RightFinger", 1)):
         path = f"{base}/{name}"
         carriage_path = path + "Carriage"
-        closed_origin = (direction * PAD_THICKNESS_M / 2, 0,
-                         -tool_length - axial_retraction_m(opening_m(0.25) / 2))
-        open_local = np.eye(4)
-        open_local[:3, 3] = closed_origin
-        open_local[0, 3] += direction * MAX_OPENING_M / 2
+        closed_origin = np.asarray(pad_center) + direction * PAD_THICKNESS_M * closing_axis / 2
+        closed_origin[2] -= axial_retraction_m(opening_m(0.25) / 2)
+        open_local = level.copy()
+        open_local[:3, 3] = closed_origin + direction * MAX_OPENING_M * closing_axis / 2
         carriage = UsdGeom.Xform.Define(stage, carriage_path)
         carriage.AddTransformOp().Set(Gf.Matrix4d(*(wrist_world @ open_local).T.flatten().tolist()))
         UsdPhysics.RigidBodyAPI.Apply(carriage.GetPrim())
@@ -195,10 +199,19 @@ def add_fingers(stage, wrist_path, wrist_world, tool_length, friction, contact_d
         UsdGeom.Gprim(pad).CreateDisplayColorAttr([Gf.Vec3f(0.18, 0.18, 0.18)])
         UsdShade.MaterialBindingAPI.Apply(pad).Bind(material, materialPurpose="physics")
         pad.CreateAttribute("mjc:condim", Sdf.ValueTypeNames.Int).Set(contact_dim)
-        slide(stage, path + "Slide", wrist_path, carriage_path, closed_origin, "X", direction,
-              MAX_OPENING_M / 2, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N)
-        slide(stage, path + "Depth", carriage_path, path, (0, 0, 0), "Z", 1,
+        mirror = 180.0 if direction < 0 else 0.0
+        slide(stage, path + "Slide", wrist_path, carriage_path, closed_origin, "X",
+              MAX_OPENING_M / 2, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N,
+              parent_yaw=pad_yaw + mirror, child_yaw=mirror)
+        slide(stage, path + "Depth", carriage_path, path, (0, 0, 0), "Z",
               AXIAL_TRAVEL_M, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N)
+    if coupled_jaws:
+        # Both sliders measure positive travel outward. The real parallel
+        # gripper has one motor and keeps these distances equal.
+        follower = stage.GetPrimAtPath(base + "/LeftFingerSlide")
+        follower.AddAppliedSchema("NewtonMimicAPI")
+        follower.CreateRelationship("newton:mimicJoint").SetTargets([base + "/RightFingerSlide"])
+        follower.CreateAttribute("newton:mimicCoef1", Sdf.ValueTypeNames.Float).Set(1.0)
     # Remove the old whole-gripper USD instances, including the instance
     # proxy collider that includes fingers fixed in the mesh.
     wrist = stage.GetPrimAtPath(wrist_path)
@@ -252,7 +265,8 @@ def apply_shape(stage, path, center, dims, yaw=0.0, mass=None):
     return root_prim
 
 
-def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_contact_dim, pad_torsion):
+def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_contact_dim, pad_torsion,
+          coupled_jaws, nominal_pad_center, fit_pad_axis):
     data = read(backup / f"trial_{trial:02}" / "replay.json")
     head = read(backup / "head_camera.json")
     if not head["calibrated"]:
@@ -307,6 +321,18 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
     measured = next(event for event in data["events"] if event["event"] == "pickup_measured_before_close")
     coordinates = read(backup / "grasp_config.json")
     tool_length = coordinates["robot"]["tool_len_m"]
+    pad_file = backup / "gripper_pad_calibration.json"
+    pad_center = [0.0, 0.0, -tool_length]
+    pad_yaw = 0.0
+    if not nominal_pad_center and pad_file.is_file():
+        pad_calibration = read(pad_file)
+        if pad_calibration["frame"] != "Right_Arm_Link8" or pad_calibration["reference_close_ratio"] != 0.25:
+            raise ValueError("Unexpected pad calibration frame or reference ratio.")
+        pad_center = pad_calibration["pad_midpoint_m"]
+        if fit_pad_axis:
+            pad_yaw = pad_calibration["pad_closing_axis_yaw_deg"]
+    elif fit_pad_axis:
+        raise ValueError("The measured pad axis requires the K3 pad calibration.")
     tcp = (np.linalg.inv(body_world) @ wrist_world @ [0, 0, -tool_length, 1])[:3]
     fk_error = np.linalg.norm(tcp - measured["tcp_m"])
     table_center = (body_world @ [*table["box_center"], 1])[:3]
@@ -356,8 +382,8 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
     apply_shape(stage, "/World/TableTop", table_center, table["box_size"], heading)
     apply_shape(stage, "/World/Box", box_center, [depth, width, height], box_yaw, nominal_mass)
     apply_shape(stage, "/World/Ground", [0, 0, -0.026], [12, 12, 0.05])
-    add_fingers(stage, robot_body_paths["Right_Arm_Link8"], wrist_world, tool_length,
-                pad_friction, pad_contact_dim, pad_torsion)
+    add_fingers(stage, robot_body_paths["Right_Arm_Link8"], wrist_world, pad_center, pad_yaw,
+                pad_friction, pad_contact_dim, pad_torsion, coupled_jaws)
     replace_wrist_camera_housing(stage, robot_body_paths["Right_Arm_Link8"], wrist_tf)
     UsdPhysics.Scene.Define(stage, "/World/PhysicsScene")
     stage.GetRootLayer().Save()
@@ -370,6 +396,10 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
         "box_yaw_world_deg": box_yaw, "box_footprint_reference_trial": 21,
         "pad_friction_nominal": pad_friction, "pad_contact_dim": pad_contact_dim,
         "pad_torsion_nominal_m": pad_torsion,
+        "coupled_jaws": coupled_jaws,
+        "pad_midpoint_at_0_25_in_link8_m": pad_center,
+        "pad_midpoint_from_rgbd": not nominal_pad_center and pad_file.is_file(),
+        "pad_closing_axis_yaw_in_link8_deg": pad_yaw,
         "table_center_world_m": table_center.tolist(), "box_center_world_m": box_center,
         "head_rgbd_fx_fy_cx_cy_w_h": head_k, "wrist_rgbd_fx_fy_cx_cy_w_h": [*wrist_k, *wh],
         "head_rgbd_optical_in_neck": head_tf.tolist(), "wrist_optical_in_link8": wrist_tf.tolist(),
@@ -388,12 +418,16 @@ def main():
     parser.add_argument("--pad-friction", type=float, default=PAD_FRICTION)
     parser.add_argument("--pad-contact-dim", type=int, choices=(3, 4), default=3)
     parser.add_argument("--pad-torsion", type=float, default=0.005)
+    parser.add_argument("--independent-jaws", action="store_true", help="Compare with the original jaw model.")
+    parser.add_argument("--nominal-pad-center", action="store_true", help="Place the pad midpoint at the planner TCP.")
+    parser.add_argument("--fit-pad-axis", action="store_true", help="Use RGB-D pad-face normals for the closing axis.")
     args = parser.parse_args()
     if args.mass <= 0 or args.pad_friction <= 0 or args.pad_torsion < 0:
         parser.error("Use a positive box mass and pad friction, and nonnegative torsional friction.")
     asset = Path(__file__).resolve().parents[1] / "assets/ymbot_d_rl/ymbot_d_rl.usda"
     build(args.derived.resolve(), args.trial, asset, args.output.resolve(), args.mass,
-          args.pad_friction, args.pad_contact_dim, args.pad_torsion)
+          args.pad_friction, args.pad_contact_dim, args.pad_torsion, not args.independent_jaws,
+          args.nominal_pad_center, args.fit_pad_axis)
 
 
 if __name__ == "__main__":

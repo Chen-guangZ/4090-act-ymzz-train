@@ -68,8 +68,10 @@ def Xform "World"
         prepend references = @/home/nvidia4090/ymbot_grasp/assets/box_cardboard.usda@
     )
     {
-        double3 xformOp:translate = (0.9, 0.05, 1.1)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
+        # 6.5 cm 快递盒（源网格 0.2 m，scale 0.325；顶面 1.0 + 0.0325）
+        double3 xformOp:translate = (0.9, 0.05, 1.0325)
+        double3 xformOp:scale = (0.325, 0.325, 0.325)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
     }
 
     # 灰色地面

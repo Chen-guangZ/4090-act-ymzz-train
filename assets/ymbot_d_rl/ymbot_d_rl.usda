@@ -1,0 +1,127 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.3.2"
+    }
+    defaultPrim = "ymbot_d"
+    endTimeCode = 1000000
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    startTimeCode = 0
+    upAxis = "Z"
+)
+
+def Xform "ymbot_d" (
+    prepend references = @./payloads/base.usda@
+    variants = {
+        string Physics = "physics"
+    }
+    append variantSets = "Physics"
+)
+{
+    over "Geometry"
+    {
+        over "base_footprint_link"
+        {
+            over "base_link"
+            {
+                over "Body_Link1"
+                {
+                    over "Body_Link2"
+                    {
+                        over "Body_Link3"
+                        {
+                            over "Body_Link4"
+                            {
+                                over "Body_Link5"
+                                {
+                                    over "Neck_Link1"
+                                    {
+                                        over "Neck_Link2"
+                                        {
+                                            def Camera "HeadCamL"
+                                            {
+                                                float2 clippingRange = (0.05, 8)
+                                                float focalLength = 39.11
+                                                float horizontalAperture = 20.955
+                                                float verticalAperture = 20.955
+                                                quatf xformOp:orient = (0.57941735, 0.4053092, -0.4053092, -0.57941735)
+                                                double3 xformOp:translate = (0.06, 0.04, 0.05)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+                                            }
+
+                                            def Camera "HeadCamR"
+                                            {
+                                                float2 clippingRange = (0.05, 8)
+                                                float focalLength = 39.11
+                                                float horizontalAperture = 20.955
+                                                float verticalAperture = 20.955
+                                                quatf xformOp:orient = (0.57941735, 0.4053092, -0.4053092, -0.57941735)
+                                                double3 xformOp:translate = (0.06, -0.04, 0.05)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+                                            }
+                                        }
+                                    }
+
+                                    over "Right_Arm_Link1"
+                                    {
+                                        over "Right_Arm_Link2"
+                                        {
+                                            over "Right_Arm_Link3"
+                                            {
+                                                over "Right_Arm_Link4"
+                                                {
+                                                    over "Right_Arm_Link5"
+                                                    {
+                                                        over "Right_Arm_Link6"
+                                                        {
+                                                            over "Right_Arm_Link7"
+                                                            {
+                                                                over "Right_Arm_Link8"
+                                                                {
+                                                                    def Camera "WristCam"
+                                                                    {
+                                                                        float2 clippingRange = (0.02, 5)
+                                                                        float focalLength = 4.5
+                                                                        float3 xformOp:rotateXYZ = (0, 0, 0)
+                                                                        double3 xformOp:translate = (0, 0, 0.05)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    variantSet "Physics" = {
+        "mujoco" (
+            prepend payload = @./payloads/Physics/mujoco.usda@
+        ) {
+
+        }
+        "none" {
+
+        }
+        "physics" (
+            prepend payload = @./payloads/Physics/physics.usda@
+        ) {
+
+        }
+        "physx" (
+            prepend payload = @./payloads/Physics/physx.usda@
+        ) {
+
+        }
+    }
+}
+

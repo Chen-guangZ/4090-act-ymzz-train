@@ -1,0 +1,1061 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.3.2"
+    }
+    defaultPrim = "ymbot_d"
+    doc = """Generated from Composed Stage of root layer /home/nvidia4090/ymbot_rl/assets/usd/ymbot_d_rl/.asset-transformer-31wnq2bu/payloads/base.usd
+"""
+    endTimeCode = 1000000
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    startTimeCode = 0
+    subLayers = [
+        @./robot.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "ymbot_d" (
+    prepend apiSchemas = ["GeomModelAPI", "IsaacRobotAPI"]
+    assetInfo = {
+        string name = "ymbot_d"
+    }
+    kind = "component"
+)
+{
+    float3[] extentsHint = [(-0.33194515, -0.27308062, -0.07242916), (0.3376912, 0.2766088, 1.6647173), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (-0.33194515, -0.27308062, -0.07242916), (0.3376912, 0.2766088, 1.6647173)]
+    custom rel isaac:physics:robotJoints
+    custom rel isaac:physics:robotLinks
+    custom token isaac:robotType = "Default"
+
+    def Scope "Materials"
+    {
+        def Material "camera_bracket_gray" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/camera_bracket_gray>
+        )
+        {
+        }
+
+        def Material "camera_body_black" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/camera_body_black>
+        )
+        {
+        }
+
+        def Material "camera_lens_blue" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/camera_lens_blue>
+        )
+        {
+        }
+    }
+
+    def Scope "Geometry"
+    {
+        def Xform "base_footprint_link"
+        {
+            def Xform "base_link" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Xform "moveit_base_link" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/moveit_base_link>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "Body_Link1" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.010018, 0, 0.098)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                    def Xform "moveit_link1" (
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/moveit_link1>
+                    )
+                    {
+                        quatd xformOp:orient = (1, 0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Xform "Body_Link2" (
+                        prepend apiSchemas = ["IsaacLinkAPI"]
+                    )
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0.38)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        def Xform "moveit_link2" (
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/moveit_link2>
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Xform "Body_Link3" (
+                            prepend apiSchemas = ["IsaacLinkAPI"]
+                        )
+                        {
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, 0.380000000000002)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                            def Xform "moveit_link3" (
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/moveit_link3>
+                            )
+                            {
+                                quatd xformOp:orient = (1, 0, 0, 0)
+                                double3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0, 0, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+
+                            def Xform "Body_Link4" (
+                                prepend apiSchemas = ["IsaacLinkAPI"]
+                            )
+                            {
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (-0.000149312849898759, 0.000225587108490438, 0.10028777193681)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                def Xform "moveit_waist_yaw_link" (
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/moveit_waist_yaw_link>
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Xform "Body_Link5" (
+                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                )
+                                {
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0.0462993128500052, -0.000225587108488995, 0.239468209946098)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                    def Xform "moveit_fix" (
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/moveit_fix>
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+
+                                    def Xform "Left_Arm_Link1" (
+                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                    )
+                                    {
+                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (-0.0461499999999991, 0.136499999999998, 0.172744018118703)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                        def Xform "moveit_left_shoulder_pitch_link" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_left_shoulder_pitch_link>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+
+                                        def Xform "Left_Arm_Link2" (
+                                            prepend apiSchemas = ["IsaacLinkAPI"]
+                                        )
+                                        {
+                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0.0779999999999997, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "moveit_left_shoulder_roll_link" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_left_shoulder_roll_link>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "Left_Arm_Link3" (
+                                                prepend apiSchemas = ["IsaacLinkAPI"]
+                                            )
+                                            {
+                                                quatf xformOp:orient = (1, 0, 0, 0)
+                                                float3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (-0.00249999999999985, 0, -0.0539999999999998)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                def Xform "moveit_left_shoulder_yaw_link" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/moveit_left_shoulder_yaw_link>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+
+                                                def Xform "Left_Arm_Link4" (
+                                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                                )
+                                                {
+                                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                                    float3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, -0.2095)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                    def Xform "moveit_left_elbow_pitch_link" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/moveit_left_elbow_pitch_link>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+
+                                                    def Xform "Left_Arm_Link5" (
+                                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                                    )
+                                                    {
+                                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                                        float3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, -0.054)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                        def Xform "moveit_left_elbow_yaw_link" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/moveit_left_elbow_yaw_link>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+
+                                                        def Xform "Left_Arm_Link6" (
+                                                            prepend apiSchemas = ["IsaacLinkAPI"]
+                                                        )
+                                                        {
+                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                            float3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, -0.14969999999999)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                            def Xform "moveit_left_wrist_pitch_link" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/moveit_left_wrist_pitch_link>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+
+                                                            def Xform "Left_Arm_Link7" (
+                                                                prepend apiSchemas = ["IsaacLinkAPI"]
+                                                            )
+                                                            {
+                                                                quatf xformOp:orient = (1, 0, 0, 0)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, -0.0420000000000042)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "moveit_left_wrist_yaw_link" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/moveit_left_wrist_yaw_link>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "Left_Arm_Link8" (
+                                                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                                                )
+                                                                {
+                                                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                                                    float3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, -0.101654022988496)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                    def Xform "moveit_left_hend_link" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/moveit_left_hend_link>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "moveit_left_hend_link_1" (
+                                                                        displayName = "moveit_left_hend_link"
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/moveit_left_hend_link_1>
+                                                                        uiHints = {
+                                                                            string displayName = "moveit_left_hend_link"
+                                                                        }
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "Left_Gripper_Center_Link" (
+                                                                        prepend apiSchemas = ["IsaacSiteAPI"]
+                                                                    )
+                                                                    {
+                                                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                                                        float3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, -0.18)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+                                                                }
+
+                                                                def Xform "moveit_left_wrist_yaw_link_1" (
+                                                                    displayName = "moveit_left_wrist_yaw_link"
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/moveit_left_wrist_yaw_link_1>
+                                                                    uiHints = {
+                                                                        string displayName = "moveit_left_wrist_yaw_link"
+                                                                    }
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "moveit_left_wrist_pitch_link_1" (
+                                                                displayName = "moveit_left_wrist_pitch_link"
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/moveit_left_wrist_pitch_link_1>
+                                                                uiHints = {
+                                                                    string displayName = "moveit_left_wrist_pitch_link"
+                                                                }
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+                                                        }
+
+                                                        def Xform "moveit_left_elbow_yaw_link_1" (
+                                                            displayName = "moveit_left_elbow_yaw_link"
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/moveit_left_elbow_yaw_link_1>
+                                                            uiHints = {
+                                                                string displayName = "moveit_left_elbow_yaw_link"
+                                                            }
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+                                                    }
+
+                                                    def Xform "moveit_left_elbow_pitch_link_1" (
+                                                        displayName = "moveit_left_elbow_pitch_link"
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/moveit_left_elbow_pitch_link_1>
+                                                        uiHints = {
+                                                            string displayName = "moveit_left_elbow_pitch_link"
+                                                        }
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+                                                }
+
+                                                def Xform "moveit_left_shoulder_yaw_link_1" (
+                                                    displayName = "moveit_left_shoulder_yaw_link"
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/moveit_left_shoulder_yaw_link_1>
+                                                    uiHints = {
+                                                        string displayName = "moveit_left_shoulder_yaw_link"
+                                                    }
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+                                            }
+
+                                            def Xform "moveit_left_shoulder_roll_link_1" (
+                                                displayName = "moveit_left_shoulder_roll_link"
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_left_shoulder_roll_link_1>
+                                                uiHints = {
+                                                    string displayName = "moveit_left_shoulder_roll_link"
+                                                }
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "moveit_left_shoulder_pitch_link_1" (
+                                            displayName = "moveit_left_shoulder_pitch_link"
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_left_shoulder_pitch_link_1>
+                                            uiHints = {
+                                                string displayName = "moveit_left_shoulder_pitch_link"
+                                            }
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+                                    }
+
+                                    def Xform "Right_Arm_Link1" (
+                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                    )
+                                    {
+                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (-0.0461499999999991, -0.136500000000002, 0.172744018118703)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                        def Xform "moveit_right_shoulder_pitch_link" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_right_shoulder_pitch_link>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+
+                                        def Xform "Right_Arm_Link2" (
+                                            prepend apiSchemas = ["IsaacLinkAPI"]
+                                        )
+                                        {
+                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, -0.078, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "moveit_right_shoulder_roll_link" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_right_shoulder_roll_link>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "Right_Arm_Link3" (
+                                                prepend apiSchemas = ["IsaacLinkAPI"]
+                                            )
+                                            {
+                                                quatf xformOp:orient = (1, 0, 0, 0)
+                                                float3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (-0.00250000000000015, 0, -0.0539999999999999)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                def Xform "moveit_right_shoulder_yaw_link" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/moveit_right_shoulder_yaw_link>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+
+                                                def Xform "Right_Arm_Link4" (
+                                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                                )
+                                                {
+                                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                                    float3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, -0.2095)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                    def Xform "moveit_right_elbow_pitch_link" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/moveit_right_elbow_pitch_link>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+
+                                                    def Xform "Right_Arm_Link5" (
+                                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                                    )
+                                                    {
+                                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                                        float3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, -0.054)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                        def Xform "moveit_right_elbow_yaw_link" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/moveit_right_elbow_yaw_link>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+
+                                                        def Xform "Right_Arm_Link6" (
+                                                            prepend apiSchemas = ["IsaacLinkAPI"]
+                                                        )
+                                                        {
+                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                            float3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, -0.149699999999994)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                            def Xform "moveit_right_wrist_pitch_link" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/moveit_right_wrist_pitch_link>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+
+                                                            def Xform "Right_Arm_Link7" (
+                                                                prepend apiSchemas = ["IsaacLinkAPI"]
+                                                            )
+                                                            {
+                                                                quatf xformOp:orient = (1, 0, 0, 0)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, -0.042)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "moveit_right_wrist_yaw_link" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/moveit_right_wrist_yaw_link>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "Right_Arm_Link8" (
+                                                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                                                )
+                                                                {
+                                                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                                                    float3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, -0.101654022988496)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                    def Xform "moveit_right_zhixing_gripper_link" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/moveit_right_zhixing_gripper_link>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (0.5, -0.5, -0.5, 0.5)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "Right_Hand_Camera_Link" (
+                                                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                                                    )
+                                                                    {
+                                                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                                                        float3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0.14, -0.088345977011504)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                        def Cube "camera_longitudinal_bracket_visual" (
+                                                                            prepend apiSchemas = ["MaterialBindingAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            rel material:binding = </ymbot_d/Materials/camera_bracket_gray>
+                                                                            double size = 1
+                                                                            custom string urdf:name = "camera_longitudinal_bracket_visual"
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.01, 0.088345975)
+                                                                            double3 xformOp:translate = (0, -0.14, 0.044172988505752)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cube "camera_lateral_bracket_visual" (
+                                                                            prepend apiSchemas = ["MaterialBindingAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            rel material:binding = </ymbot_d/Materials/camera_bracket_gray>
+                                                                            double size = 1
+                                                                            custom string urdf:name = "camera_lateral_bracket_visual"
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.14, 0.01)
+                                                                            double3 xformOp:translate = (0, -0.07, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cube "camera_body_visual" (
+                                                                            prepend apiSchemas = ["MaterialBindingAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            rel material:binding = </ymbot_d/Materials/camera_body_black>
+                                                                            double size = 1
+                                                                            custom string urdf:name = "camera_body_visual"
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.04, 0.02)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cylinder "camera_lens_visual" (
+                                                                            prepend apiSchemas = ["MaterialBindingAPI"]
+                                                                        )
+                                                                        {
+                                                                            uniform token axis = "Z"
+                                                                            float3[] extent = [(-0.008, -0.008, -0.0025), (0.008, 0.008, 0.0025)]
+                                                                            double height = 0.005
+                                                                            rel material:binding = </ymbot_d/Materials/camera_lens_blue>
+                                                                            double radius = 0.008
+                                                                            custom string urdf:name = "camera_lens_visual"
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (1, 1, 1)
+                                                                            double3 xformOp:translate = (0, 0, -0.0125)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cube "camera_longitudinal_bracket_collision" (
+                                                                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            uniform token purpose = "guide"
+                                                                            double size = 1
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.01, 0.088345975)
+                                                                            double3 xformOp:translate = (0, -0.14, 0.044172988505752)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cube "camera_lateral_bracket_collision" (
+                                                                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            uniform token purpose = "guide"
+                                                                            double size = 1
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.14, 0.01)
+                                                                            double3 xformOp:translate = (0, -0.07, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Cube "camera_body_collision" (
+                                                                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                                                        )
+                                                                        {
+                                                                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                                                            uniform token purpose = "guide"
+                                                                            double size = 1
+                                                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                                                            float3 xformOp:scale = (0.04, 0.04, 0.02)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+                                                                    }
+
+                                                                    def Xform "moveit_right_zhixing_gripper_link_1" (
+                                                                        displayName = "moveit_right_zhixing_gripper_link"
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/moveit_right_zhixing_gripper_link_1>
+                                                                        uiHints = {
+                                                                            string displayName = "moveit_right_zhixing_gripper_link"
+                                                                        }
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (0.5, -0.5, -0.5, 0.5)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "Right_Gripper_Center_Link" (
+                                                                        prepend apiSchemas = ["IsaacSiteAPI"]
+                                                                    )
+                                                                    {
+                                                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                                                        float3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0, 0, -0.18)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+                                                                }
+
+                                                                def Xform "moveit_right_wrist_yaw_link_1" (
+                                                                    displayName = "moveit_right_wrist_yaw_link"
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/moveit_right_wrist_yaw_link_1>
+                                                                    uiHints = {
+                                                                        string displayName = "moveit_right_wrist_yaw_link"
+                                                                    }
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "moveit_right_wrist_pitch_link_1" (
+                                                                displayName = "moveit_right_wrist_pitch_link"
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/moveit_right_wrist_pitch_link_1>
+                                                                uiHints = {
+                                                                    string displayName = "moveit_right_wrist_pitch_link"
+                                                                }
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+                                                        }
+
+                                                        def Xform "moveit_right_elbow_yaw_link_1" (
+                                                            displayName = "moveit_right_elbow_yaw_link"
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/moveit_right_elbow_yaw_link_1>
+                                                            uiHints = {
+                                                                string displayName = "moveit_right_elbow_yaw_link"
+                                                            }
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+                                                    }
+
+                                                    def Xform "moveit_right_elbow_pitch_link_1" (
+                                                        displayName = "moveit_right_elbow_pitch_link"
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/moveit_right_elbow_pitch_link_1>
+                                                        uiHints = {
+                                                            string displayName = "moveit_right_elbow_pitch_link"
+                                                        }
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+                                                }
+
+                                                def Xform "moveit_right_shoulder_yaw_link_1" (
+                                                    displayName = "moveit_right_shoulder_yaw_link"
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/moveit_right_shoulder_yaw_link_1>
+                                                    uiHints = {
+                                                        string displayName = "moveit_right_shoulder_yaw_link"
+                                                    }
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0, 0, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+                                            }
+
+                                            def Xform "moveit_right_shoulder_roll_link_1" (
+                                                displayName = "moveit_right_shoulder_roll_link"
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_right_shoulder_roll_link_1>
+                                                uiHints = {
+                                                    string displayName = "moveit_right_shoulder_roll_link"
+                                                }
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "moveit_right_shoulder_pitch_link_1" (
+                                            displayName = "moveit_right_shoulder_pitch_link"
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_right_shoulder_pitch_link_1>
+                                            uiHints = {
+                                                string displayName = "moveit_right_shoulder_pitch_link"
+                                            }
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+                                    }
+
+                                    def Xform "Neck_Link1" (
+                                        prepend apiSchemas = ["IsaacLinkAPI"]
+                                    )
+                                    {
+                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (-0.069968, 0, 0.24574)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                        def Xform "moveit_neck_yaw_link" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_neck_yaw_link>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+
+                                        def Xform "Neck_Link2" (
+                                            prepend apiSchemas = ["IsaacLinkAPI"]
+                                        )
+                                        {
+                                            quatf xformOp:orient = (1, 0, 0, 0)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0.039)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "moveit_neck_pitch_link" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_neck_pitch_link>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "moveit_neck_pitch_link_1" (
+                                                displayName = "moveit_neck_pitch_link"
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/moveit_neck_pitch_link_1>
+                                                uiHints = {
+                                                    string displayName = "moveit_neck_pitch_link"
+                                                }
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "moveit_neck_yaw_link_1" (
+                                            displayName = "moveit_neck_yaw_link"
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/moveit_neck_yaw_link_1>
+                                            uiHints = {
+                                                string displayName = "moveit_neck_yaw_link"
+                                            }
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+                                    }
+
+                                    def Xform "moveit_fix_1" (
+                                        displayName = "moveit_fix"
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/moveit_fix_1>
+                                        uiHints = {
+                                            string displayName = "moveit_fix"
+                                        }
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+                                }
+
+                                def Xform "moveit_waist_yaw_link_1" (
+                                    displayName = "moveit_waist_yaw_link"
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/moveit_waist_yaw_link_1>
+                                    uiHints = {
+                                        string displayName = "moveit_waist_yaw_link"
+                                    }
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+                            }
+
+                            def Xform "moveit_link3_1" (
+                                displayName = "moveit_link3"
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/moveit_link3_1>
+                                uiHints = {
+                                    string displayName = "moveit_link3"
+                                }
+                            )
+                            {
+                                quatd xformOp:orient = (1, 0, 0, 0)
+                                double3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0, 0, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+                        }
+
+                        def Xform "moveit_link2_1" (
+                            displayName = "moveit_link2"
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/moveit_link2_1>
+                            uiHints = {
+                                string displayName = "moveit_link2"
+                            }
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+                    }
+
+                    def Xform "moveit_link1_1" (
+                        displayName = "moveit_link1"
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/moveit_link1_1>
+                        uiHints = {
+                            string displayName = "moveit_link1"
+                        }
+                    )
+                    {
+                        quatd xformOp:orient = (1, 0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+
+                def Xform "moveit_base_link_1" (
+                    displayName = "moveit_base_link"
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/moveit_base_link_1>
+                    uiHints = {
+                        string displayName = "moveit_base_link"
+                    }
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+        }
+    }
+
+    def Scope "Physics"
+    {
+    }
+
+    def Scope "VisualMaterials"
+    {
+    }
+}
+

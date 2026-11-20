@@ -1,0 +1,66 @@
+#usda 1.0
+(
+    defaultPrim = "box_checker"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "box_checker" (
+    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+)
+{
+    float physics:mass = 2
+
+    def "geometry"
+    {
+        def Mesh "mesh" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 1, 2, 6, 5, 3, 0, 4, 7, 0, 1, 5, 4, 2, 3, 7, 6]
+            rel material:binding = </box_checker/materials/box_checker>
+            uniform token physics:approximation = "convexHull"
+            point3f[] points = [(-0.1, -0.1, -0.1), (0.1, -0.1, -0.1), (0.1, 0.1, -0.1), (-0.1, 0.1, -0.1), (-0.1, -0.1, 0.1), (0.1, -0.1, 0.1), (0.1, 0.1, 0.1), (-0.1, 0.1, 0.1)]
+            texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "faceVarying"
+            )
+        }
+    }
+
+    def "materials"
+    {
+        def Material "box_checker"
+        {
+            token outputs:surface.connect = </box_checker/materials/box_checker/Shader.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </box_checker/materials/box_checker/TexChecker.outputs:rgb>
+                float inputs:metallic = 0
+                float inputs:roughness = 0.9
+                token outputs:surface
+            }
+
+            def Shader "TexChecker"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @/home/nvidia4090/ymbot_grasp/assets/textures/box_cardboard.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </box_checker/materials/box_checker/StReader.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                color3f outputs:rgb
+            }
+
+            def Shader "StReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname = "st"
+                float2 outputs:result
+            }
+        }
+    }
+}
+

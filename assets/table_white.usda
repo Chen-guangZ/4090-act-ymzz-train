@@ -1,0 +1,63 @@
+#usda 1.0
+(
+    defaultPrim = "table_wood"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "table_wood" (
+    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+)
+{
+    float physics:mass = 20
+
+    def "geometry"
+    {
+        def Mesh "mesh" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 1, 2, 6, 5, 3, 0, 4, 7, 0, 1, 5, 4, 2, 3, 7, 6]
+            rel material:binding = </table_wood/materials/table_wood>
+            uniform token physics:approximation = "convexHull"
+            point3f[] points = [(-0.8, -0.4, -0.02), (0.8, -0.4, -0.02), (0.8, 0.4, -0.02), (-0.8, 0.4, -0.02), (-0.8, -0.4, 0.02), (0.8, -0.4, 0.02), (0.8, 0.4, 0.02), (-0.8, 0.4, 0.02)]
+            texCoord2f[] primvars:st = [(0, 0), (0, 1), (1, 1), (1, 0), (0, 0), (1, 0), (1, 1), (0, 1), (1, 0), (1, 0), (1, 1), (1, 1), (0, 0), (0, 0), (0, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (1, 0), (0, 0), (0, 1), (1, 1)] (
+                interpolation = "faceVarying"
+            )
+        }
+    }
+
+    def "materials"
+    {
+        def Material "table_wood"
+        {
+            token outputs:surface.connect = </table_wood/materials/table_wood/Shader.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </table_wood/materials/table_wood/TexWood.outputs:rgb>
+                float inputs:roughness = 0.85
+                token outputs:surface
+            }
+
+            def Shader "TexWood"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @/home/nvidia4090/ymbot_grasp/assets/textures/table_white.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </table_wood/materials/table_wood/StReader.outputs:result>
+                color3f outputs:rgb
+            }
+
+            def Shader "StReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname = "st"
+                float2 outputs:result
+            }
+        }
+    }
+}
+

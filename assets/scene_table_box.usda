@@ -16,7 +16,7 @@ def Xform "World"
 
     # 桌面（1.6 x 0.8 x 0.04 木纹板，顶面 z = 1.0）
     def Xform "TableTop" (
-        prepend references = @/home/nvidia4090/ymbot_push/assets/usd/table_wood.usda@
+        prepend references = @/home/nvidia4090/ymbot_grasp/assets/table_white.usda@
     )
     {
         double3 xformOp:translate = (1.3, 0, 0.98)
@@ -65,7 +65,7 @@ def Xform "World"
 
     # 20 cm 快递盒（印刷纹理），桌面靠机器人侧
     def Xform "Box" (
-        prepend references = @/home/nvidia4090/ymbot_push/assets/usd/box_checker.usda@
+        prepend references = @/home/nvidia4090/ymbot_grasp/assets/box_cardboard.usda@
     )
     {
         double3 xformOp:translate = (0.9, 0.05, 1.1)

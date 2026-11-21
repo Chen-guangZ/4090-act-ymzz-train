@@ -9,10 +9,12 @@ from pathlib import Path
 
 import newton
 import numpy as np
+import warp as wp
 from k3_gripper import AXIAL_TRAVEL_M, MAX_OPENING_M, axial_retraction_m, opening_m
 
 
 DT = 1 / 180
+SAMPLE_HZ = 30
 
 
 def read_tracks(path, joints, start_ns, end_ns):
@@ -67,8 +69,14 @@ class BoxContacts:
     def __init__(self, builder, solver, device):
         self.solver = solver
         self.box = builder.shape_label.index("/World/Box/Collider")
-        self.pads = [builder.shape_label.index(f"/World/Robot/GripperParts/{name}/Collider")
-                     for name in self.names]
+        self.pads = [
+            [i for i, label in enumerate(builder.shape_label)
+             if (label.startswith(f"/World/Robot/GripperParts/{name}/")
+                 and builder.shape_flags[i] & newton.ShapeFlags.COLLIDE_SHAPES)]
+            for name in self.names
+        ]
+        if not all(self.pads):
+            raise ValueError("Both finger pad colliders must be present to sample their normal loads.")
         self.buffer = newton.Contacts(solver.mjw_data.naconmax, 0, device=device, requested_attributes={"force"})
 
     def loads(self, state):
@@ -82,7 +90,8 @@ class BoxContacts:
         normals = buffer.rigid_contact_normal.numpy()[:count]
         forces = buffer.force.numpy()[:count, :3]
         normal_loads = np.abs(np.einsum("ij,ij->i", normals, forces))
-        return [float(normal_loads[((a == self.box) & (b == pad)) | ((a == pad) & (b == self.box))].sum())
+        return [float(normal_loads[((a == self.box) & np.isin(b, pad)) |
+                                   (np.isin(a, pad) & (b == self.box))].sum())
                 for pad in self.pads]
 
 
@@ -98,7 +107,10 @@ class ArmBiasCompensation:
         self.torques = np.zeros(solver.model.joint_dof_count, dtype=np.float32)
 
     def apply(self, control):
-        bias = self.solver.mjw_data.qfrc_bias.numpy()[0, self.mj_dofs]
+        if self.solver.use_mujoco_cpu:
+            bias = self.solver.mj_data.qfrc_bias[self.mj_dofs]
+        else:
+            bias = self.solver.mjw_data.qfrc_bias.numpy()[0, self.mj_dofs]
         self.torques[self.newton_dofs] = np.clip(bias, -self.effort, self.effort)
         control.joint_f.assign(self.torques)
 
@@ -115,9 +127,20 @@ def main():
                         help="Compensate simulated arm dynamics for measured-pose replay.")
     parser.add_argument("--through-release", action="store_true",
                         help="Continue through the recorded place, release and retreat.")
+    parser.add_argument("--physics-hz", type=int, default=round(1 / DT),
+                        help="Physics update rate. Contact and pose output remain at 30 Hz.")
+    parser.add_argument("--deterministic", action="store_true",
+                        help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
-    if args.device == "cpu" and (args.sample_contacts or args.arm_bias_compensation):
-        parser.error("Contact sampling and bias compensation are available on the MJWarp GPU path.")
+    if args.device == "cpu" and args.sample_contacts:
+        parser.error("Contact sampling is available on the MJWarp GPU path.")
+    if args.device == "cpu" and args.deterministic:
+        parser.error("The deterministic kernel option applies to the MJWarp GPU path.")
+    if args.physics_hz < SAMPLE_HZ or args.physics_hz % SAMPLE_HZ:
+        parser.error("The physics rate must be a positive multiple of 30 Hz.")
+    dt = 1 / args.physics_hz
+    sample_stride = args.physics_hz // SAMPLE_HZ
+    sample_dt = sample_stride * dt
     trial = json.loads((args.trial_dir / "replay.json").read_text())
     scene = json.loads(args.scene.with_suffix(".json").read_text())
     begin = next(c for c in trial["gripper_commands"] if c["ratio"] < 1)
@@ -126,8 +149,8 @@ def main():
     finish = next(e for e in trial["events"] if e["event"] == finish_event and e["stage"] == finish_stage)
     duration = event_time(finish) - begin["bag_time_ns"] / 1e9
     start_ns = begin["bag_time_ns"] - int(0.75e9)
-    steps = int((duration + 0.75) / DT)
-    clock = np.arange(steps) * DT
+    steps = int((duration + 0.75) / dt)
+    clock = np.arange(steps) * dt
     opening = jaw_opening_track(clock, start_ns, trial["gripper_commands"])
 
     builder = newton.ModelBuilder()
@@ -157,13 +180,14 @@ def main():
         builder.joint_armature[dof] = armature
         builder.joint_effort_limit[dof] = effort
     fingers = []
+    passive_linkage = scene.get("passive_linkage", False)
     for name in ("LeftFinger", "RightFinger"):
         joint = slots[name + "Slide"]
         q, dof = builder.joint_q_start[joint], builder.joint_qd_start[joint]
         depth_joint = slots[name + "Depth"]
         depth_q = builder.joint_q_start[depth_joint]
         depth_target = builder.joint_qd_start[depth_joint]
-        fingers.append((q, depth_target))
+        fingers.append((q, depth_q, depth_target))
         builder.joint_q[q] = MAX_OPENING_M / 2
         builder.joint_q[depth_q] = AXIAL_TRAVEL_M
         controls[:, dof] = opening / 2
@@ -174,6 +198,8 @@ def main():
     model = builder.finalize(args.device)
     solver = newton.solvers.SolverMuJoCo(model, njmax=120, nconmax=120, integrator="implicitfast",
                                        cone=args.cone,
+                                       deterministic=wp.DeterministicMode.RUN_TO_RUN if args.deterministic else None,
+                                       disable_sensors=args.deterministic,
                                        use_mujoco_cpu=args.device == "cpu")
     contacts = BoxContacts(builder, solver, args.device) if args.sample_contacts else None
     compensation = (ArmBiasCompensation(solver, arm_dofs, builder.joint_effort_limit)
@@ -185,30 +211,39 @@ def main():
     half_dims = np.asarray(scene["box_dims_m_perception_estimate"]) / 2
     q = state.joint_q.numpy()
     for i, target in enumerate(controls):
-        for width_q, depth_target in fingers:
-            target[depth_target] = axial_retraction_m(q[width_q])
+        if not passive_linkage:
+            for width_q, _, depth_target in fingers:
+                target[depth_target] = axial_retraction_m(q[width_q])
         control.joint_target_q.assign(target)
         if compensation and i:
             compensation.apply(control)
         state.clear_forces()
-        solver.step(state, following, control, None, DT)
+        solver.step(state, following, control, None, dt)
         state, following = following, state
         q = state.joint_q.numpy()
-        if i % 6 == 0:
+        if i % sample_stride == 0:
             pose = state.body_q.numpy()
             clearance = bottom_height(pose[box], half_dims) - scene["table_top_world_m"]
             samples.append([float(clock[i]), *pose[box, :3].tolist(), *pose[right, :3].tolist(),
-                            float(sum(q[width_q] for width_q, _ in fingers)), clearance])
+                            float(sum(q[width_q] for width_q, _, _ in fingers)), clearance])
             if contacts:
                 samples[-1].extend(contacts.loads(state))
+            samples[-1].extend(pose[box, 3:].tolist())
+            samples[-1].extend(pose[right, 3:].tolist())
+            samples[-1].extend(float(q[depth_q]) for _, depth_q, _ in fingers)
     result = np.array(samples)
     rest_z = scene["table_top_world_m"] + half_dims[2]
     raised = result[:, 3] - rest_z
     clearance = result[:, 8]
-    sustained = longest_lift(clearance, 0.10, DT * 6)
+    sustained = longest_lift(clearance, 0.10, sample_dt)
     report = {
         "trial": trial["trial"], "close_command": begin["ratio"], "friction_cone": args.cone,
         "arm_bias_compensation": args.arm_bias_compensation,
+        "physics_hz": args.physics_hz, "sample_hz": SAMPLE_HZ,
+        "solver_device": args.device,
+        "deterministic_kernels": args.deterministic,
+        "passive_linkage": passive_linkage,
+        "pad_tiles_per_axis": scene.get("pad_tiles_per_axis", 1),
         "replayed_through_release": args.through_release,
         "commanded_gap_m": opening_m(begin["ratio"]), "finite": bool(np.isfinite(result).all()),
         "peak_center_lift_m": float(raised.max()), "peak_bottom_clearance_m": float(clearance.max()),
@@ -222,10 +257,14 @@ def main():
         report["sample_columns"] += ["left_pad_normal_load_n", "right_pad_normal_load_n"]
         report["peak_pad_normal_load_n"] = result[:, 9:11].max(axis=0).tolist()
         both = np.min(result[:, 9:11], axis=1)
-        report["longest_bilateral_contact_s"] = longest_lift(both, 0.1, DT * 6)
+        report["longest_bilateral_contact_s"] = longest_lift(both, 0.1, sample_dt)
         report["continuous_bilateral_lift_s"] = longest_lift(
-            (both >= 0.1) & (clearance >= 0.10), True, DT * 6,
+            (both >= 0.1) & (clearance >= 0.10), True, sample_dt,
         )
+    report["sample_columns"] += [
+        f"{body}_quat_{axis}" for body in ("box", "wrist") for axis in ("x", "y", "z", "w")
+    ]
+    report["sample_columns"] += ["left_pad_axial_travel_m", "right_pad_axial_travel_m"]
     if args.through_release:
         tail = result[result[:, 0] >= result[-1, 0] - 1.0]
         offset = tail[-1, 1:3] - np.asarray(scene["box_center_world_m"][:2])

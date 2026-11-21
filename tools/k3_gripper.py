@@ -32,3 +32,13 @@ def opening_m(command):
 def axial_retraction_m(half_gap):
     half_gap = np.clip(half_gap, 0.0, MAX_OPENING_M / 2)
     return float(LINK_RADIUS_M - np.sqrt(LINK_RADIUS_M ** 2 - half_gap ** 2))
+
+
+def passive_linkage_coefficients():
+    """Approximate the CAD arc with an even quartic over the measured stroke."""
+    gap = MAX_OPENING_M / 2
+    points = np.linspace(0.0, 1.0, 65)
+    target = np.array([axial_retraction_m(float(x * gap)) for x in points])
+    basis = points**2 - points**4
+    quadratic = float(basis @ (target - AXIAL_TRAVEL_M * points**4) / (basis @ basis))
+    return (0.0, 0.0, quadratic / gap**2, 0.0, (AXIAL_TRAVEL_M - quadratic) / gap**4)

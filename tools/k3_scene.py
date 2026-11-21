@@ -14,7 +14,7 @@ from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade
 from k3_gripper import (
     AXIAL_TRAVEL_M, DRIVE_DAMPING, DRIVE_FORCE_N, DRIVE_STIFFNESS, MAX_OPENING_M,
     PAD_FRICTION, PAD_LENGTH_M, PAD_MASS_KG, PAD_THICKNESS_M, PAD_WIDTH_M,
-    axial_retraction_m, opening_m,
+    axial_retraction_m, opening_m, passive_linkage_coefficients,
 )
 
 
@@ -156,15 +156,48 @@ def slide(stage, path, parent, child, origin, axis, limit, stiffness, damping, m
     slider.CreateLowerLimitAttr(0.0)
     slider.CreateUpperLimitAttr(limit)
     slider.CreateCollisionEnabledAttr(False)
-    drive = UsdPhysics.DriveAPI.Apply(slider.GetPrim(), "linear")
-    drive.CreateTypeAttr("force")
-    drive.CreateStiffnessAttr(stiffness)
-    drive.CreateDampingAttr(damping)
-    drive.CreateMaxForceAttr(max_force)
-    drive.CreateTargetPositionAttr(limit)
+    if stiffness:
+        drive = UsdPhysics.DriveAPI.Apply(slider.GetPrim(), "linear")
+        drive.CreateTypeAttr("force")
+        drive.CreateStiffnessAttr(stiffness)
+        drive.CreateDampingAttr(damping)
+        drive.CreateMaxForceAttr(max_force)
+        drive.CreateTargetPositionAttr(limit)
+    return slider.GetPrim()
 
 
-def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, contact_dim, torsion, coupled_jaws):
+def pad_contact_shapes(stage, path, pad_tiles):
+    pad = stage.GetPrimAtPath(path + "/Collider")
+    tint = Gf.Vec3f(0.18, 0.18, 0.18)
+    UsdGeom.Gprim(pad).CreateDisplayColorAttr([tint])
+    if pad_tiles == 1:
+        return [pad]
+
+    # Cover the same pad envelope with separated patches. This represents
+    # the distributed pad surface without adding a grasp constraint.
+    UsdPhysics.CollisionAPI(pad).CreateCollisionEnabledAttr(False)
+    patch_width = PAD_WIDTH_M / pad_tiles
+    patch_length = PAD_LENGTH_M / pad_tiles
+    patch_gap = 0.0002
+    shapes = []
+    for y in range(pad_tiles):
+        for z in range(pad_tiles):
+            cube = UsdGeom.Cube.Define(stage, f"{path}/ContactPatch{y}{z}")
+            cube.GetSizeAttr().Set(1.0)
+            cube.AddTranslateOp().Set(Gf.Vec3d(
+                0.0, (y + 0.5) * patch_width - PAD_WIDTH_M / 2,
+                (z + 0.5) * patch_length - PAD_LENGTH_M / 2,
+            ))
+            cube.AddScaleOp().Set(Gf.Vec3d(PAD_THICKNESS_M, patch_width - patch_gap, patch_length - patch_gap))
+            shape = cube.GetPrim()
+            UsdPhysics.CollisionAPI.Apply(shape)
+            UsdGeom.Imageable(shape).MakeInvisible()
+            shapes.append(shape)
+    return shapes
+
+
+def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, contact_dim, torsion,
+                coupled_jaws, passive_linkage, pad_tiles):
     base = "/World/Robot/GripperParts"
     UsdGeom.Xform.Define(stage, base)
     material = UsdShade.Material.Define(stage, "/World/FingerPadMaterial")
@@ -195,16 +228,22 @@ def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, c
                              (PAD_THICKNESS_M, PAD_WIDTH_M, PAD_LENGTH_M), mass=PAD_MASS_KG)
         xf = UsdGeom.Xformable(finger)
         xf.MakeMatrixXform().Set(Gf.Matrix4d(*(wrist_world @ open_local).T.flatten().tolist()))
-        pad = stage.GetPrimAtPath(path + "/Collider")
-        UsdGeom.Gprim(pad).CreateDisplayColorAttr([Gf.Vec3f(0.18, 0.18, 0.18)])
-        UsdShade.MaterialBindingAPI.Apply(pad).Bind(material, materialPurpose="physics")
-        pad.CreateAttribute("mjc:condim", Sdf.ValueTypeNames.Int).Set(contact_dim)
+        for pad in pad_contact_shapes(stage, path, pad_tiles):
+            UsdShade.MaterialBindingAPI.Apply(pad).Bind(material, materialPurpose="physics")
+            pad.CreateAttribute("mjc:condim", Sdf.ValueTypeNames.Int).Set(contact_dim)
         mirror = 180.0 if direction < 0 else 0.0
         slide(stage, path + "Slide", wrist_path, carriage_path, closed_origin, "X",
               MAX_OPENING_M / 2, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N,
               parent_yaw=pad_yaw + mirror, child_yaw=mirror)
-        slide(stage, path + "Depth", carriage_path, path, (0, 0, 0), "Z",
-              AXIAL_TRAVEL_M, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N)
+        depth = slide(stage, path + "Depth", carriage_path, path, (0, 0, 0), "Z",
+                      AXIAL_TRAVEL_M, 0.0 if passive_linkage else DRIVE_STIFFNESS,
+                      DRIVE_DAMPING, DRIVE_FORCE_N)
+        if passive_linkage:
+            depth.AddAppliedSchema("MjcEqualityJointAPI")
+            depth.CreateRelationship("newton:mimicJoint").SetTargets([path + "Slide"])
+            for index, coefficient in enumerate(passive_linkage_coefficients()):
+                name = f"newton:mimicCoef{index}" if index < 2 else f"mjc:coef{index}"
+                depth.CreateAttribute(name, Sdf.ValueTypeNames.Float).Set(coefficient)
     if coupled_jaws:
         # Both sliders measure positive travel outward. The real parallel
         # gripper has one motor and keeps these distances equal.
@@ -266,7 +305,7 @@ def apply_shape(stage, path, center, dims, yaw=0.0, mass=None):
 
 
 def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_contact_dim, pad_torsion,
-          coupled_jaws, nominal_pad_center, fit_pad_axis):
+          coupled_jaws, nominal_pad_center, fit_pad_axis, passive_linkage, pad_tiles):
     data = read(backup / f"trial_{trial:02}" / "replay.json")
     head = read(backup / "head_camera.json")
     if not head["calibrated"]:
@@ -383,7 +422,7 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
     apply_shape(stage, "/World/Box", box_center, [depth, width, height], box_yaw, nominal_mass)
     apply_shape(stage, "/World/Ground", [0, 0, -0.026], [12, 12, 0.05])
     add_fingers(stage, robot_body_paths["Right_Arm_Link8"], wrist_world, pad_center, pad_yaw,
-                pad_friction, pad_contact_dim, pad_torsion, coupled_jaws)
+                pad_friction, pad_contact_dim, pad_torsion, coupled_jaws, passive_linkage, pad_tiles)
     replace_wrist_camera_housing(stage, robot_body_paths["Right_Arm_Link8"], wrist_tf)
     UsdPhysics.Scene.Define(stage, "/World/PhysicsScene")
     stage.GetRootLayer().Save()
@@ -397,6 +436,8 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
         "pad_friction_nominal": pad_friction, "pad_contact_dim": pad_contact_dim,
         "pad_torsion_nominal_m": pad_torsion,
         "coupled_jaws": coupled_jaws,
+        "passive_linkage": passive_linkage,
+        "pad_tiles_per_axis": pad_tiles,
         "pad_midpoint_at_0_25_in_link8_m": pad_center,
         "pad_midpoint_from_rgbd": not nominal_pad_center and pad_file.is_file(),
         "pad_closing_axis_yaw_in_link8_deg": pad_yaw,
@@ -421,13 +462,17 @@ def main():
     parser.add_argument("--independent-jaws", action="store_true", help="Compare with the original jaw model.")
     parser.add_argument("--nominal-pad-center", action="store_true", help="Place the pad midpoint at the planner TCP.")
     parser.add_argument("--fit-pad-axis", action="store_true", help="Use RGB-D pad-face normals for the closing axis.")
+    parser.add_argument("--passive-linkage", action="store_true",
+                        help="Couple axial retraction to jaw travel in MJWarp without a separate axial drive.")
+    parser.add_argument("--pad-tiles", type=int, choices=(1, 2), default=1,
+                        help="Subdivide each pad collider into a 1x1 or 2x2 contact grid.")
     args = parser.parse_args()
     if args.mass <= 0 or args.pad_friction <= 0 or args.pad_torsion < 0:
         parser.error("Use a positive box mass and pad friction, and nonnegative torsional friction.")
     asset = Path(__file__).resolve().parents[1] / "assets/ymbot_d_rl/ymbot_d_rl.usda"
     build(args.derived.resolve(), args.trial, asset, args.output.resolve(), args.mass,
           args.pad_friction, args.pad_contact_dim, args.pad_torsion, not args.independent_jaws,
-          args.nominal_pad_center, args.fit_pad_axis)
+          args.nominal_pad_center, args.fit_pad_axis, args.passive_linkage, args.pad_tiles)
 
 
 if __name__ == "__main__":

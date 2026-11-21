@@ -10,22 +10,9 @@ import tarfile
 import newton
 import numpy as np
 
+from k3_camera import optical_rays
 from k3_scene import body_pose, joint_positions_at, read, set_fk_pose
 from track_k3_box_crease import frame_time
-
-
-def optical_rays(pixels, camera):
-    k = np.asarray(camera["k"]).reshape(3, 3)
-    distorted = (np.asarray(pixels) - k[:2, 2]) / k.diagonal()[:2]
-    k1, k2, p1, p2, k3 = camera["d"]
-    points = distorted.copy()
-    for _ in range(8):
-        x, y = points.T
-        r2 = x*x + y*y
-        radial = 1 + r2 * (k1 + r2 * (k2 + r2 * k3))
-        tangential = np.column_stack((2*p1*x*y + p2*(r2 + 2*x*x), p1*(r2 + 2*y*y) + 2*p2*x*y))
-        points = (distorted - tangential) / radial[:, None]
-    return np.column_stack((points, np.ones(len(points))))
 
 
 def triangulate(views, offsets):

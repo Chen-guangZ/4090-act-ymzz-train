@@ -115,3 +115,29 @@ V="$D/validation"
 "$PY" -B tools/measure_k3_placement.py "$D" "$V/wrist_placement/annotations.json" \
   "$V/placement_regression_360hz_gpu" "$V/wrist_placement/measurement.json"
 ```
+
+## 指垫与摩擦约束对照
+
+- 对开口标定深度做 D405 去畸变后，指垫中点变化小于 0.4 mm，闭合轴角由 −5.87° 变为 −5.86°。按相对两指的法向投影，深度估计开口比此前实测标定大约 4–6 mm，仍沿用此前开口标定。去畸变对照可通过 `fit_k3_pad_offsets.py` 的 `--undistort --output` 重建。
+- 拟合闭合轴与较高扭转系数的组合延长了部分样本的夹持。#21 CPU 可夹到开爪时刻，但此时箱体倾斜约 79°，开爪后从桌边滑落。对应 GPU 对照的 #20、#21 均提前失夹。
+- CPU 的名义接触对照中，#20、#21 持续失夹前一秒的双指载荷中位数约 11.4–11.6 N，最接近摩擦锥边界的接触点利用率 P90 不到 6%。箱体在失夹前已相对手腕明显旋转。用 `--sample-pad-friction --device cpu --cone elliptic` 可复现。每个指垫记录法向力至少 0.1 N 的接触点中最大的摩擦锥用量，以及同一点的扭转分量。
+- 分块指垫、摩擦系数、夹爪推力和 60 g 名义箱重保持一致。回放启用 `--contact-impratio`，仅修改 MuJoCo 摩擦约束相对法向约束的阻抗。阻抗比 400 的 360 Hz CPU 在 #17 保持抓空，#18–#21 完成夹持到开爪及稳定放回，最终平面偏差约 7.7、3.6、9.6、3.7 mm。180 Hz 的 #20、#21 对照也通过。阻抗比用于仿真数值对照，默认回放仍沿用原求解器设置。标定仍需要真实箱体重量、质心和夹持位置。
+- 在同一候选设置下，4090 GPU 的五例首跑通过当前诊断。#18–#21 的放回偏差分别约 8.9、6.4、16.7、7.3 mm。#20 普通 GPU 核以相同配置再次运行后仍完成稳定放回，偏差约 20.6 mm，超过本轮使用的 20 mm 诊断阈值。两次结果分别在 `score_400_cuda.json` 和 `score_repeat_20_cuda.json`。`replay_clearance_20_21.png` 对比首跑与原配置的箱底轨迹。
+- 在 CPU 400 对照中改用 1.5 s 满行程假设，#20、#21 仍稳定放回，平面偏差约 9.4、4.6 mm。
+- K3 的 field-4 交接资料把纸箱受夹宽估为约 30 mm，归档 RGB-D 重建的短边约 49 mm。使用 `--box-width-mm 30` 将短边对称缩到假设值后的 CPU 400 对照仍复现 #17 抓空，#20 和 #21 留在桌面，最后偏差约 19.6 和 11.6 mm。场景报告分别保存原始估计与碰撞体实际应用值，默认继续使用 RGB-D 拟合值。补测时请量同一装载状态和夹点处两面的距离。
+
+结果、逐帧轨迹及复现脚本见 `validation/contact_impedance/` 与 `validation/pad_axis_torsion/`。用归档分块场景复现五例候选回归：
+
+```bash
+cd /home/nvidia4090/ymbot_grasp
+PY=/home/nvidia4090/IsaacLab/.venv/bin/python
+D=/home/nvidia4090/real_data/k3_20261120
+V="$D/validation/contact_impedance"
+OUT=$(mktemp -d "$V/reproduced_XXXXXX")
+for trial in 17 18 19 20 21; do
+  K3_VALIDATION_OUTPUT="$OUT" bash "$V/run_case.sh" "$trial" 400 cuda:0
+done
+"$PY" -B tools/check_k3_placement.py "$D/derived" "$OUT/score_400_cuda.json" \
+  "$OUT"/dynamics_{17,18,19,20,21}_400_cuda.json \
+  --max-placement-error-mm 20 --max-rest-motion-mm 2 --require-pass
+```

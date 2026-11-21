@@ -71,8 +71,10 @@ class BoxContacts:
     names = ("LeftFinger", "RightFinger")
     columns = ("left_pad_normal_load_n", "right_pad_normal_load_n",
                "table_box_normal_load_n", "floor_box_normal_load_n", "other_robot_box_normal_load_n")
+    friction_columns = ("left_pad_max_cone_usage", "left_pad_spin_usage_at_max_cone",
+                        "right_pad_max_cone_usage", "right_pad_spin_usage_at_max_cone")
 
-    def __init__(self, builder, solver, device):
+    def __init__(self, builder, solver, device, sample_pad_friction=False):
         self.solver = solver
         self.box = builder.shape_label.index("/World/Box/Collider")
         self.pads = [
@@ -83,6 +85,8 @@ class BoxContacts:
         ]
         if not all(self.pads):
             raise ValueError("Both finger pad colliders must be present to sample their normal loads.")
+        self.sample_pad_friction = sample_pad_friction
+        self.pad_group = {shape: group for group, members in enumerate(self.pads) for shape in members}
         pads = set(self.pads[0] + self.pads[1])
         robot = [i for i, label in enumerate(builder.shape_label)
                  if label.startswith("/World/Robot/") and i not in pads]
@@ -106,23 +110,36 @@ class BoxContacts:
         touches_box = (a == self.box) | (b == self.box)
         counterpart = np.where(a == self.box, b, a)[touches_box]
         loads = normal_loads[touches_box]
-        return counterpart, loads
+        return counterpart, loads, []
 
     def _cpu_loads(self):
         m, d = self.solver.mj_model, self.solver.mj_data
         counterpart, loads = [], []
+        peak = np.zeros((2, 2))
         for index in range(d.ncon):
-            a, b = self.geom_to_shape[d.contact[index].geom]
+            contact = d.contact[index]
+            a, b = self.geom_to_shape[contact.geom]
             if a != self.box and b != self.box:
                 continue
             mujoco.mj_contactForce(m, d, index, self.wrench)
-            counterpart.append(b if a == self.box else a)
-            loads.append(abs(self.wrench[0]))
-        return np.asarray(counterpart), np.asarray(loads)
+            other = b if a == self.box else a
+            normal = abs(self.wrench[0])
+            counterpart.append(other)
+            loads.append(normal)
+            if self.sample_pad_friction and normal >= 0.1 and other in self.pad_group:
+                group = self.pad_group[other]
+                dim = contact.dim
+                scaling = np.asarray(contact.friction[:dim - 1]) * normal
+                scaled = np.divide(self.wrench[1:dim], scaling, where=scaling > 0,
+                                   out=np.zeros_like(scaling))
+                usage = np.linalg.norm(scaled)
+                if usage > peak[group, 0]:
+                    peak[group] = (usage, abs(scaled[2]) if dim >= 4 else 0.0)
+        return np.asarray(counterpart), np.asarray(loads), peak.ravel().tolist() if self.sample_pad_friction else []
 
     def loads(self, state):
-        counterpart, loads = self._cpu_loads() if self.solver.use_mujoco_cpu else self._gpu_loads(state)
-        return [float(loads[np.isin(counterpart, group)].sum()) for group in self.groups]
+        counterpart, loads, friction = self._cpu_loads() if self.solver.use_mujoco_cpu else self._gpu_loads(state)
+        return [float(loads[np.isin(counterpart, group)].sum()) for group in self.groups] + friction
 
 
 class ArmBiasCompensation:
@@ -152,8 +169,12 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--cone", choices=("elliptic", "pyramidal"), default="pyramidal")
+    parser.add_argument("--contact-impratio", type=float,
+                        help="Override MuJoCo's friction-to-normal contact impedance ratio.")
     parser.add_argument("--sample-contacts", action="store_true",
                         help="Log normal loads on the box from both pads, the table, the floor and other robot geometry.")
+    parser.add_argument("--sample-pad-friction", action="store_true",
+                        help="Also log peak per-pad friction cone usage and spin usage (CPU elliptic solver).")
     parser.add_argument("--arm-bias-compensation", action="store_true",
                         help="Compensate simulated arm dynamics for measured-pose replay.")
     parser.add_argument("--through-release", action="store_true",
@@ -165,6 +186,10 @@ def main():
     parser.add_argument("--deterministic", action="store_true",
                         help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
+    if args.contact_impratio is not None and (not np.isfinite(args.contact_impratio) or args.contact_impratio <= 0):
+        parser.error("--contact-impratio must be finite and positive.")
+    if args.sample_pad_friction and (args.device != "cpu" or args.cone != "elliptic"):
+        parser.error("--sample-pad-friction requires --device cpu --cone elliptic.")
     if args.jaw_full_stroke_s is not None and (not np.isfinite(args.jaw_full_stroke_s) or args.jaw_full_stroke_s <= 0):
         parser.error("--jaw-full-stroke-s must be finite and positive.")
     if args.device == "cpu" and args.deterministic:
@@ -230,18 +255,20 @@ def main():
     right = next(i for i, label in enumerate(builder.body_label) if label.endswith("/Right_Arm_Link8"))
     model = builder.finalize(args.device)
     solver = newton.solvers.SolverMuJoCo(model, njmax=120, nconmax=120, integrator="implicitfast",
-                                       cone=args.cone,
+                                       cone=args.cone, impratio=args.contact_impratio,
                                        deterministic=wp.DeterministicMode.RUN_TO_RUN if args.deterministic else None,
                                        disable_sensors=args.deterministic,
                                        use_mujoco_cpu=args.device == "cpu")
-    contacts = BoxContacts(builder, solver, args.device) if args.sample_contacts else None
+    contacts = (BoxContacts(builder, solver, args.device, args.sample_pad_friction)
+                if args.sample_contacts or args.sample_pad_friction else None)
     compensation = (ArmBiasCompensation(solver, arm_dofs, builder.joint_effort_limit)
                     if args.arm_bias_compensation else None)
     state, following = model.state(), model.state()
     newton.eval_fk(model, model.joint_q, model.joint_qd, state)
     control = model.control()
     samples = []
-    half_dims = np.asarray(scene["box_dims_m_perception_estimate"]) / 2
+    box_dimensions = scene.get("box_dimensions_m", scene["box_dims_m_perception_estimate"])
+    half_dims = np.asarray(box_dimensions) / 2
     q = state.joint_q.numpy()
     for i, target in enumerate(controls):
         if not passive_linkage:
@@ -271,6 +298,8 @@ def main():
     sustained = longest_lift(clearance, 0.10, sample_dt)
     report = {
         "trial": trial["trial"], "close_command": begin["ratio"], "friction_cone": args.cone,
+        "contact_impratio": float(solver.mj_model.opt.impratio),
+        "box_dimensions_m": box_dimensions,
         "arm_bias_compensation": args.arm_bias_compensation,
         "physics_hz": args.physics_hz, "sample_hz": SAMPLE_HZ,
         "solver_device": args.device,
@@ -291,6 +320,8 @@ def main():
     }
     if contacts:
         report["sample_columns"] += list(contacts.columns)
+        if contacts.sample_pad_friction:
+            report["sample_columns"] += list(contacts.friction_columns)
         report["peak_pad_normal_load_n"] = result[:, 9:11].max(axis=0).tolist()
         both = np.min(result[:, 9:11], axis=1)
         report["longest_bilateral_contact_s"] = longest_lift(both, 0.1, sample_dt)

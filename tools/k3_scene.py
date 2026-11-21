@@ -305,7 +305,8 @@ def apply_shape(stage, path, center, dims, yaw=0.0, mass=None):
 
 
 def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_contact_dim, pad_torsion,
-          coupled_jaws, nominal_pad_center, fit_pad_axis, passive_linkage, pad_tiles, box_com, jaw_force):
+          coupled_jaws, nominal_pad_center, fit_pad_axis, passive_linkage, pad_tiles, box_com, jaw_force,
+          box_width_override):
     data = read(backup / f"trial_{trial:02}" / "replay.json")
     head = read(backup / "head_camera.json")
     if not head["calibrated"]:
@@ -419,7 +420,7 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
     wrist_prim.SetCustomDataByKey("k3DistortionSource", wrist_info)
     heading = np.degrees(np.arctan2(body_world[1, 0], body_world[0, 0]))
     apply_shape(stage, "/World/TableTop", table_center, table["box_size"], heading)
-    box_dims = np.asarray([depth, width, height])
+    box_dims = np.asarray([depth, width if box_width_override is None else box_width_override, height])
     if np.any(np.abs(box_com) >= box_dims / 2):
         raise ValueError("Box center of mass must lie inside the fitted box.")
     box_prim = apply_shape(stage, "/World/Box", box_center, box_dims, box_yaw, nominal_mass)
@@ -436,7 +437,8 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
         "tool_length_m": tool_length, "tcp_body_link5_m": tcp.tolist(), "tcp_fk_error_m": float(fk_error),
         "table_top_world_m": float(surface_world[2]), "table_fitting_rms_m": table["table"]["rms_m"],
         "base_alignment_deg": float(np.degrees(np.arccos(np.clip(support_normal[2], -1, 1)))),
-        "box_dims_m_perception_estimate": [depth, width, height], "box_mass_kg_nominal": nominal_mass,
+        "box_dims_m_perception_estimate": [depth, width, height], "box_dimensions_m": box_dims.tolist(),
+        "box_mass_kg_nominal": nominal_mass,
         "box_yaw_world_deg": box_yaw, "box_footprint_reference_trial": 21,
         "box_com_offset_local_m": box_com,
         "jaw_horizontal_drive_limit_per_pad_n": jaw_force,
@@ -463,6 +465,8 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--trial", type=int, default=21)
     parser.add_argument("--mass", type=float, default=0.060)
+    parser.add_argument("--box-width-mm", type=float,
+                        help="Override the short horizontal dimension about the estimated box center.")
     parser.add_argument("--box-com-mm", type=float, nargs=3, default=(0.0, 0.0, 0.0),
                         metavar=("DEPTH", "WIDTH", "HEIGHT"), help="Box-local COM offset from geometric center.")
     parser.add_argument("--jaw-force-per-pad-n", type=float, default=DRIVE_FORCE_N,
@@ -480,6 +484,8 @@ def main():
     args = parser.parse_args()
     if args.mass <= 0 or args.pad_friction <= 0 or args.pad_torsion < 0:
         parser.error("Use a positive box mass and pad friction, and nonnegative torsional friction.")
+    if args.box_width_mm is not None and (not np.isfinite(args.box_width_mm) or args.box_width_mm <= 0):
+        parser.error("--box-width-mm must be finite and positive.")
     asset = Path(__file__).resolve().parents[1] / "assets/ymbot_d_rl/ymbot_d_rl.usda"
     box_com = [value / 1000 for value in args.box_com_mm]
     if not np.isfinite(box_com).all():
@@ -489,7 +495,7 @@ def main():
     build(args.derived.resolve(), args.trial, asset, args.output.resolve(), args.mass,
           args.pad_friction, args.pad_contact_dim, args.pad_torsion, not args.independent_jaws,
           args.nominal_pad_center, args.fit_pad_axis, args.passive_linkage, args.pad_tiles, box_com,
-          args.jaw_force_per_pad_n)
+          args.jaw_force_per_pad_n, None if args.box_width_mm is None else args.box_width_mm / 1000)
 
 
 if __name__ == "__main__":

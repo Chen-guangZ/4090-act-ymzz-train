@@ -73,6 +73,31 @@ def recorded_release(log):
     return close, (release - close) * 1e-9 + 0.75
 
 
+def pad_friction_before_loss_or_release(channels, bilateral, support, release):
+    names = ("left_pad_max_cone_usage", "right_pad_max_cone_usage")
+    if support is None or not all(name in channels for name in names):
+        return None
+    lost = support["first_sustained_bilateral_loss_s"]
+    end = release if lost is None else lost
+    time = channels["elapsed_s"]
+    selected = bilateral & (time >= end - 1.0) & (time < end)
+    if not selected.any():
+        return None
+    result = {"reference": "recorded_release" if lost is None else "first_sustained_bilateral_loss",
+              "reference_s": end, "bilateral_samples_in_previous_second": int(selected.sum())}
+    for side, name in zip(("left", "right"), names, strict=True):
+        usage = channels[name][selected]
+        spin = channels[f"{side}_pad_spin_usage_at_max_cone"][selected]
+        result[side] = {
+            "median_pad_normal_load_n": float(np.median(channels[f"{side}_pad_normal_load_n"][selected])),
+            "cone_usage_p90": float(np.quantile(usage, 0.9)),
+            "cone_usage_max": float(usage.max()),
+            "spin_usage_at_max_cone_p90": float(np.quantile(spin, 0.9)),
+            "cone_usage_at_least_95_percent_samples": int((usage >= 0.95).sum()),
+        }
+    return result
+
+
 def analyze(trace, log):
     channels = dict(zip(trace["sample_columns"], np.asarray(trace["samples"]).T, strict=True))
     time = channels["elapsed_s"]
@@ -116,13 +141,28 @@ def analyze(trace, log):
     if last_contact is not None and time[last_contact] >= starts["return_above_pickup"]:
         first_return = int(time.searchsorted(starts["return_above_pickup"]))
         handoff = phase_result(local, first_return, last_contact + 1)
+    support = support_diagnosis(channels, bilateral, elapsed)
+    pre_release = int(time.searchsorted(elapsed)) - 1
+    if 0 <= pre_release < len(time) - 1:
+        box_up = orientation["box"][pre_release, 2, 2]
+        pre_release_pose = {
+            "elapsed_s": float(time[pre_release]),
+            "bottom_clearance_m": float(channels["bottom_clearance_m"][pre_release]),
+            "tilt_from_world_up_deg": float(np.degrees(np.arccos(np.clip(box_up, -1.0, 1.0)))),
+            "xy_change_from_initial_sample_m": float(np.linalg.norm(position["box"][pre_release, :2]
+                                                                     - position["box"][0, :2])),
+        }
+    else:
+        pre_release_pose = None
     return {
         "trial": trace["trial"],
         "physics_hz": trace["physics_hz"],
         "passive_linkage": trace.get("passive_linkage", False),
         "phases": phase_stats,
         "return_until_final_bilateral_contact": handoff,
-        "support_diagnosis": support_diagnosis(channels, bilateral, elapsed),
+        "support_diagnosis": support,
+        "pad_friction_before_loss_or_release": pad_friction_before_loss_or_release(channels, bilateral, support, elapsed),
+        "box_pose_before_recorded_release": pre_release_pose,
         "last_bilateral_contact_before_release_s": (
             float(elapsed - time[last_contact]) if last_contact is not None else None
         ),

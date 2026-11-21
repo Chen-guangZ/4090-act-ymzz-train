@@ -35,16 +35,19 @@ def event_time(event):
     return datetime.fromisoformat(event["time"]).timestamp()
 
 
-def jaw_opening_track(clock, start_ns, commands):
+def jaw_opening_track(clock, start_ns, commands, full_stroke_s=None):
     opening = np.full_like(clock, MAX_OPENING_M)
     previous = MAX_OPENING_M
+    previous_ratio = 1.0
     for command in commands:
         target = opening_m(command["ratio"])
         if target == previous:
             continue
         when = (command["bag_time_ns"] - start_ns) * 1e-9 + 0.10
-        opening += (target - previous) * np.clip((clock - when) / 0.55, 0.0, 1.0)
+        duration = 0.55 if full_stroke_s is None else full_stroke_s * abs(command["ratio"] - previous_ratio)
+        opening += (target - previous) * np.clip((clock - when) / duration, 0.0, 1.0)
         previous = target
+        previous_ratio = command["ratio"]
     return opening
 
 
@@ -155,11 +158,15 @@ def main():
                         help="Compensate simulated arm dynamics for measured-pose replay.")
     parser.add_argument("--through-release", action="store_true",
                         help="Continue through the recorded place, release and retreat.")
+    parser.add_argument("--jaw-full-stroke-s", type=float,
+                        help="Scale transition duration by the fraction of RS485 stroke commanded.")
     parser.add_argument("--physics-hz", type=int, default=round(1 / DT),
                         help="Physics update rate. Contact and pose output remain at 30 Hz.")
     parser.add_argument("--deterministic", action="store_true",
                         help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
+    if args.jaw_full_stroke_s is not None and (not np.isfinite(args.jaw_full_stroke_s) or args.jaw_full_stroke_s <= 0):
+        parser.error("--jaw-full-stroke-s must be finite and positive.")
     if args.device == "cpu" and args.deterministic:
         parser.error("The deterministic kernel option applies to the MJWarp GPU path.")
     if args.physics_hz < SAMPLE_HZ or args.physics_hz % SAMPLE_HZ:
@@ -177,7 +184,7 @@ def main():
     start_ns = begin["bag_time_ns"] - int(0.75e9)
     steps = int((duration + 0.75) / dt)
     clock = np.arange(steps) * dt
-    opening = jaw_opening_track(clock, start_ns, trial["gripper_commands"])
+    opening = jaw_opening_track(clock, start_ns, trial["gripper_commands"], args.jaw_full_stroke_s)
 
     builder = newton.ModelBuilder()
     newton.solvers.SolverMuJoCo.register_custom_attributes(builder)
@@ -272,6 +279,7 @@ def main():
         "pad_tiles_per_axis": scene.get("pad_tiles_per_axis", 1),
         "box_com_offset_local_m": scene.get("box_com_offset_local_m", [0.0, 0.0, 0.0]),
         "jaw_horizontal_drive_limit_per_pad_n": scene.get("jaw_horizontal_drive_limit_per_pad_n"),
+        "jaw_full_stroke_s": args.jaw_full_stroke_s,
         "replayed_through_release": args.through_release,
         "commanded_gap_m": opening_m(begin["ratio"]), "finite": bool(np.isfinite(result).all()),
         "peak_center_lift_m": float(raised.max()), "peak_bottom_clearance_m": float(clearance.max()),

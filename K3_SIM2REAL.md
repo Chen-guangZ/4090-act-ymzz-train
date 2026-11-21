@@ -77,3 +77,26 @@ done
 - 汇总见 `validation/placement_contact_summary.json`。原始数值和执行记录分别位于 `validation/support_contacts/`、`validation/com_sensitivity/` 和 `validation/jaw_force_sensitivity/`。可在上述 GPU 分块命令的场景生成步骤加 `--box-com-mm -30 0 -40` 重建 #21 质心对照，轴顺序为箱体深度、宽度、高度。`--jaw-force-per-pad-n` 可单独改变横向驱动上限。
 
 当前阶段优先用同一装载状态的箱体重量、沿长边的平衡点、标注夹点的照片和完整侧视视频重跑 #20、#21。将离桌、保持到计划开爪、放回位置误差及撤离后静止分别验收，再用 #17–#19 做回归。在相机观测集成前，应核对训练观测使用 K3 的 Gemini 2L 与 D405 的实际输出及标定。
+
+## 完整抓取回归
+
+用分块条件生成并回放 #17–#21，保持 `--sample-contacts --through-release`。然后在 4090 上运行：
+
+```bash
+cd /home/nvidia4090/ymbot_grasp
+PY=/home/nvidia4090/IsaacLab/.venv/bin/python
+D=/home/nvidia4090/real_data/k3_20261120
+V="$D/validation/placement_regression_360hz_gpu"
+"$PY" -B tools/check_k3_placement.py "$D/derived" "$V/score.json" "$V"/dynamics_{17,18,19,20,21}.json \
+  --max-placement-error-mm 20 --max-rest-motion-mm 2
+```
+
+工具以人工抓空或夹起标签选择对应判定。夹起样本要求开爪前双指带载并离桌至少 10 cm、连续至少 1 s，随后保持到录制的首次开爪指令。撤离后要求末 0.5 s 有桌面支撑、箱体与地面和机器人已脱离，并分别报告相对原取件位置的箱体平面偏移与最后一秒内箱体中心的最大单轴位移范围。示例使用 20 mm 放回位置偏差和 2 mm 位移范围作为仿真诊断阈值，按任务要求显式传入对应数值。加 `--require-pass` 后，任一项失败时仍会写出报告，并退出为 1。现场人工标签只核验夹起，放回验收仍需同步侧视观测。
+
+本批 4090 MJWarp 五例均完整运行到撤离。#17 保持抓空，#18–#21 双指带载离桌至少 10 cm 的最长连续时间分别为 7.80、8.40、8.30、6.97 s。四例均在开爪指令前失夹，撤离后均无桌面支撑。逐例判定见 `validation/placement_regression_360hz_gpu/score.json`。
+
+## 夹爪时间对照
+
+K3 归档的右夹爪驱动日志可与 #20、#21 的 bag 开合命令对齐。驱动从位置写入到发送启动帧约隔 0.10 s，模拟沿用该延时。现场台架记录估计速度设为 200 时一次满行程约 1.5 s，部署的右夹爪没有可用 RS485 开口或电流读反馈。回放仍默认用原先的 0.55 s 开合斜坡。可加 `--jaw-full-stroke-s 1.5` 按命令行程比例缩放斜坡，#21 的 1.00 到 0.25 斜坡约 1.125 s。两种跑法用于比较时间敏感性，带载行程与真实接触时刻仍需视频或外部测量。
+
+#20 的腕部图像在闭合指令后约 0.73 s 仍能看到夹爪与箱体之间的间隙，约 1.23 s 两指已贴近箱边。#21 对应画面约为 0.55 s 和 1.15 s。时间按原 JPEG 文件名取近似值，局部帧间隔约 0.5 s。采用 1.5 s 满行程假设后，#21 在 CPU 和 GPU 上仍分别在开爪前约 6.5 s 和 9.7 s 失夹，和对应原斜坡对照接近。视图、逐帧来源和速度对照见 `validation/jaw_timing_sensitivity/`。

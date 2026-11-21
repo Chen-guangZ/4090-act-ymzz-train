@@ -65,6 +65,14 @@ def support_diagnosis(channels, bilateral, release):
     return result
 
 
+def recorded_release(log):
+    commands = log["gripper_commands"]
+    close = next(command["bag_time_ns"] for command in commands if command["ratio"] < 1)
+    release = next(command["bag_time_ns"] for command in commands
+                   if command["ratio"] == 1 and command["bag_time_ns"] > close)
+    return close, (release - close) * 1e-9 + 0.75
+
+
 def analyze(trace, log):
     channels = dict(zip(trace["sample_columns"], np.asarray(trace["samples"]).T, strict=True))
     time = channels["elapsed_s"]
@@ -80,9 +88,7 @@ def analyze(trace, log):
     load_fields = ["left_pad_normal_load_n", "right_pad_normal_load_n"]
     bilateral = (np.minimum(*[channels[name] for name in load_fields]) >= 0.1
                  if all(name in channels for name in load_fields) else None)
-    close = next(c["bag_time_ns"] for c in log["gripper_commands"] if c["ratio"] < 1)
-    release = next(c["bag_time_ns"] for c in log["gripper_commands"] if c["bag_time_ns"] > close and c["ratio"] == 1)
-    elapsed = (release - close) * 1e-9 + 0.75
+    close, elapsed = recorded_release(log)
     starts = {
         e["stage"]: datetime.fromisoformat(e["time"]).timestamp() - close / 1e9 + 0.75
         for e in log["events"] if e["event"] == "motion_start"

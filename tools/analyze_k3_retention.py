@@ -33,6 +33,38 @@ def phase_result(samples, first, last):
     }
 
 
+def support_diagnosis(channels, bilateral, release):
+    names = ("table_box_normal_load_n", "floor_box_normal_load_n", "other_robot_box_normal_load_n")
+    if bilateral is None or not all(name in channels for name in names):
+        return None
+    time = channels["elapsed_s"]
+    lifted = np.flatnonzero(bilateral & (channels["bottom_clearance_m"] >= 0.10))
+    if not len(lifted):
+        return None
+    first = int(lifted[0])
+    last = int(time.searchsorted(release))
+    if first >= last:
+        return None
+    sample_s = float(np.median(np.diff(time)))
+    fallen = np.flatnonzero(np.diff(np.r_[False, ~bilateral[first:last], False].astype(int)))
+    lost = next((first + a for a, b in zip(fallen[::2], fallen[1::2])
+                 if (b - a) * sample_s >= 0.25), None)
+    result = {
+        "first_held_above_10cm_s": float(time[first]),
+        "first_sustained_bilateral_loss_s": float(time[lost]) if lost is not None else None,
+        "lost_before_recorded_release_s": float(release - time[lost]) if lost is not None else None,
+        "max_normal_load_between_clearance_and_loss_n": (
+            {name: float(channels[name][first:lost+1].max()) for name in names} if lost is not None else None
+        ),
+    }
+    for name in names:
+        contact = np.flatnonzero(channels[name][first:] >= 0.1)
+        result[f"first_{name.removesuffix('_normal_load_n')}_contact_after_lift_s"] = (
+            float(time[first + contact[0]]) if len(contact) else None
+        )
+    return result
+
+
 def analyze(trace, log):
     channels = dict(zip(trace["sample_columns"], np.asarray(trace["samples"]).T, strict=True))
     time = channels["elapsed_s"]
@@ -84,6 +116,7 @@ def analyze(trace, log):
         "passive_linkage": trace.get("passive_linkage", False),
         "phases": phase_stats,
         "return_until_final_bilateral_contact": handoff,
+        "support_diagnosis": support_diagnosis(channels, bilateral, elapsed),
         "last_bilateral_contact_before_release_s": (
             float(elapsed - time[last_contact]) if last_contact is not None else None
         ),

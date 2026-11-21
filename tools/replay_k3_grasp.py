@@ -7,6 +7,7 @@ import gzip
 import json
 from pathlib import Path
 
+import mujoco
 import newton
 import numpy as np
 import warp as wp
@@ -62,9 +63,11 @@ def longest_lift(values, threshold, time_per_sample):
 
 
 class BoxContacts:
-    """Sample the solver's pad-to-box contact normal loads."""
+    """Sample the solver's normal loads on the box by contact counterpart."""
 
     names = ("LeftFinger", "RightFinger")
+    columns = ("left_pad_normal_load_n", "right_pad_normal_load_n",
+               "table_box_normal_load_n", "floor_box_normal_load_n", "other_robot_box_normal_load_n")
 
     def __init__(self, builder, solver, device):
         self.solver = solver
@@ -77,22 +80,46 @@ class BoxContacts:
         ]
         if not all(self.pads):
             raise ValueError("Both finger pad colliders must be present to sample their normal loads.")
-        self.buffer = newton.Contacts(solver.mjw_data.naconmax, 0, device=device, requested_attributes={"force"})
+        pads = set(self.pads[0] + self.pads[1])
+        robot = [i for i, label in enumerate(builder.shape_label)
+                 if label.startswith("/World/Robot/") and i not in pads]
+        self.groups = [*self.pads, [builder.shape_label.index("/World/TableTop/Collider")],
+                       [builder.shape_label.index("/World/Ground/Collider")], robot]
+        if solver.use_mujoco_cpu:
+            self.geom_to_shape = solver.mjc_geom_to_newton_shape.numpy()[0]
+            self.wrench = np.zeros(6, dtype=np.float64)
+        else:
+            self.buffer = newton.Contacts(solver.mjw_data.naconmax, 0, device=device, requested_attributes={"force"})
 
-    def loads(self, state):
+    def _gpu_loads(self, state):
         buffer = self.buffer
         buffer.clear()
         self.solver.update_contacts(buffer, state)
         count = int(buffer.rigid_contact_count.numpy()[0])
-        if count == 0:
-            return [0.0, 0.0]
         a, b = buffer.rigid_contact_shape0.numpy()[:count], buffer.rigid_contact_shape1.numpy()[:count]
         normals = buffer.rigid_contact_normal.numpy()[:count]
         forces = buffer.force.numpy()[:count, :3]
         normal_loads = np.abs(np.einsum("ij,ij->i", normals, forces))
-        return [float(normal_loads[((a == self.box) & np.isin(b, pad)) |
-                                   (np.isin(a, pad) & (b == self.box))].sum())
-                for pad in self.pads]
+        touches_box = (a == self.box) | (b == self.box)
+        counterpart = np.where(a == self.box, b, a)[touches_box]
+        loads = normal_loads[touches_box]
+        return counterpart, loads
+
+    def _cpu_loads(self):
+        m, d = self.solver.mj_model, self.solver.mj_data
+        counterpart, loads = [], []
+        for index in range(d.ncon):
+            a, b = self.geom_to_shape[d.contact[index].geom]
+            if a != self.box and b != self.box:
+                continue
+            mujoco.mj_contactForce(m, d, index, self.wrench)
+            counterpart.append(b if a == self.box else a)
+            loads.append(abs(self.wrench[0]))
+        return np.asarray(counterpart), np.asarray(loads)
+
+    def loads(self, state):
+        counterpart, loads = self._cpu_loads() if self.solver.use_mujoco_cpu else self._gpu_loads(state)
+        return [float(loads[np.isin(counterpart, group)].sum()) for group in self.groups]
 
 
 class ArmBiasCompensation:
@@ -122,7 +149,8 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--cone", choices=("elliptic", "pyramidal"), default="pyramidal")
-    parser.add_argument("--sample-contacts", action="store_true", help="Log the two pad-to-box normal loads.")
+    parser.add_argument("--sample-contacts", action="store_true",
+                        help="Log normal loads on the box from both pads, the table, the floor and other robot geometry.")
     parser.add_argument("--arm-bias-compensation", action="store_true",
                         help="Compensate simulated arm dynamics for measured-pose replay.")
     parser.add_argument("--through-release", action="store_true",
@@ -132,8 +160,6 @@ def main():
     parser.add_argument("--deterministic", action="store_true",
                         help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
-    if args.device == "cpu" and args.sample_contacts:
-        parser.error("Contact sampling is available on the MJWarp GPU path.")
     if args.device == "cpu" and args.deterministic:
         parser.error("The deterministic kernel option applies to the MJWarp GPU path.")
     if args.physics_hz < SAMPLE_HZ or args.physics_hz % SAMPLE_HZ:
@@ -244,6 +270,8 @@ def main():
         "deterministic_kernels": args.deterministic,
         "passive_linkage": passive_linkage,
         "pad_tiles_per_axis": scene.get("pad_tiles_per_axis", 1),
+        "box_com_offset_local_m": scene.get("box_com_offset_local_m", [0.0, 0.0, 0.0]),
+        "jaw_horizontal_drive_limit_per_pad_n": scene.get("jaw_horizontal_drive_limit_per_pad_n"),
         "replayed_through_release": args.through_release,
         "commanded_gap_m": opening_m(begin["ratio"]), "finite": bool(np.isfinite(result).all()),
         "peak_center_lift_m": float(raised.max()), "peak_bottom_clearance_m": float(clearance.max()),
@@ -254,7 +282,7 @@ def main():
         "samples": samples,
     }
     if contacts:
-        report["sample_columns"] += ["left_pad_normal_load_n", "right_pad_normal_load_n"]
+        report["sample_columns"] += list(contacts.columns)
         report["peak_pad_normal_load_n"] = result[:, 9:11].max(axis=0).tolist()
         both = np.min(result[:, 9:11], axis=1)
         report["longest_bilateral_contact_s"] = longest_lift(both, 0.1, sample_dt)

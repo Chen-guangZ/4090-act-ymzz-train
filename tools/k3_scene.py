@@ -197,7 +197,7 @@ def pad_contact_shapes(stage, path, pad_tiles):
 
 
 def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, contact_dim, torsion,
-                coupled_jaws, passive_linkage, pad_tiles):
+                coupled_jaws, passive_linkage, pad_tiles, jaw_force):
     base = "/World/Robot/GripperParts"
     UsdGeom.Xform.Define(stage, base)
     material = UsdShade.Material.Define(stage, "/World/FingerPadMaterial")
@@ -233,7 +233,7 @@ def add_fingers(stage, wrist_path, wrist_world, pad_center, pad_yaw, friction, c
             pad.CreateAttribute("mjc:condim", Sdf.ValueTypeNames.Int).Set(contact_dim)
         mirror = 180.0 if direction < 0 else 0.0
         slide(stage, path + "Slide", wrist_path, carriage_path, closed_origin, "X",
-              MAX_OPENING_M / 2, DRIVE_STIFFNESS, DRIVE_DAMPING, DRIVE_FORCE_N,
+              MAX_OPENING_M / 2, DRIVE_STIFFNESS, DRIVE_DAMPING, jaw_force,
               parent_yaw=pad_yaw + mirror, child_yaw=mirror)
         depth = slide(stage, path + "Depth", carriage_path, path, (0, 0, 0), "Z",
                       AXIAL_TRAVEL_M, 0.0 if passive_linkage else DRIVE_STIFFNESS,
@@ -305,7 +305,7 @@ def apply_shape(stage, path, center, dims, yaw=0.0, mass=None):
 
 
 def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_contact_dim, pad_torsion,
-          coupled_jaws, nominal_pad_center, fit_pad_axis, passive_linkage, pad_tiles):
+          coupled_jaws, nominal_pad_center, fit_pad_axis, passive_linkage, pad_tiles, box_com, jaw_force):
     data = read(backup / f"trial_{trial:02}" / "replay.json")
     head = read(backup / "head_camera.json")
     if not head["calibrated"]:
@@ -419,10 +419,15 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
     wrist_prim.SetCustomDataByKey("k3DistortionSource", wrist_info)
     heading = np.degrees(np.arctan2(body_world[1, 0], body_world[0, 0]))
     apply_shape(stage, "/World/TableTop", table_center, table["box_size"], heading)
-    apply_shape(stage, "/World/Box", box_center, [depth, width, height], box_yaw, nominal_mass)
+    box_dims = np.asarray([depth, width, height])
+    if np.any(np.abs(box_com) >= box_dims / 2):
+        raise ValueError("Box center of mass must lie inside the fitted box.")
+    box_prim = apply_shape(stage, "/World/Box", box_center, box_dims, box_yaw, nominal_mass)
+    if any(box_com):
+        UsdPhysics.MassAPI(box_prim).CreateCenterOfMassAttr(Gf.Vec3f(*box_com))
     apply_shape(stage, "/World/Ground", [0, 0, -0.026], [12, 12, 0.05])
     add_fingers(stage, robot_body_paths["Right_Arm_Link8"], wrist_world, pad_center, pad_yaw,
-                pad_friction, pad_contact_dim, pad_torsion, coupled_jaws, passive_linkage, pad_tiles)
+                pad_friction, pad_contact_dim, pad_torsion, coupled_jaws, passive_linkage, pad_tiles, jaw_force)
     replace_wrist_camera_housing(stage, robot_body_paths["Right_Arm_Link8"], wrist_tf)
     UsdPhysics.Scene.Define(stage, "/World/PhysicsScene")
     stage.GetRootLayer().Save()
@@ -433,6 +438,8 @@ def build(backup, trial, robot_asset, output, nominal_mass, pad_friction, pad_co
         "base_alignment_deg": float(np.degrees(np.arccos(np.clip(support_normal[2], -1, 1)))),
         "box_dims_m_perception_estimate": [depth, width, height], "box_mass_kg_nominal": nominal_mass,
         "box_yaw_world_deg": box_yaw, "box_footprint_reference_trial": 21,
+        "box_com_offset_local_m": box_com,
+        "jaw_horizontal_drive_limit_per_pad_n": jaw_force,
         "pad_friction_nominal": pad_friction, "pad_contact_dim": pad_contact_dim,
         "pad_torsion_nominal_m": pad_torsion,
         "coupled_jaws": coupled_jaws,
@@ -456,6 +463,10 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--trial", type=int, default=21)
     parser.add_argument("--mass", type=float, default=0.060)
+    parser.add_argument("--box-com-mm", type=float, nargs=3, default=(0.0, 0.0, 0.0),
+                        metavar=("DEPTH", "WIDTH", "HEIGHT"), help="Box-local COM offset from geometric center.")
+    parser.add_argument("--jaw-force-per-pad-n", type=float, default=DRIVE_FORCE_N,
+                        help="Horizontal actuator force bound for each pad in a sensitivity test.")
     parser.add_argument("--pad-friction", type=float, default=PAD_FRICTION)
     parser.add_argument("--pad-contact-dim", type=int, choices=(3, 4), default=3)
     parser.add_argument("--pad-torsion", type=float, default=0.005)
@@ -470,9 +481,15 @@ def main():
     if args.mass <= 0 or args.pad_friction <= 0 or args.pad_torsion < 0:
         parser.error("Use a positive box mass and pad friction, and nonnegative torsional friction.")
     asset = Path(__file__).resolve().parents[1] / "assets/ymbot_d_rl/ymbot_d_rl.usda"
+    box_com = [value / 1000 for value in args.box_com_mm]
+    if not np.isfinite(box_com).all():
+        parser.error("Box center of mass must be finite.")
+    if not np.isfinite(args.jaw_force_per_pad_n) or args.jaw_force_per_pad_n <= 0:
+        parser.error("Jaw force must be finite and positive.")
     build(args.derived.resolve(), args.trial, asset, args.output.resolve(), args.mass,
           args.pad_friction, args.pad_contact_dim, args.pad_torsion, not args.independent_jaws,
-          args.nominal_pad_center, args.fit_pad_axis, args.passive_linkage, args.pad_tiles)
+          args.nominal_pad_center, args.fit_pad_axis, args.passive_linkage, args.pad_tiles, box_com,
+          args.jaw_force_per_pad_n)
 
 
 if __name__ == "__main__":

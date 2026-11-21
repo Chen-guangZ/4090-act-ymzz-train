@@ -100,3 +100,18 @@ V="$D/validation/placement_regression_360hz_gpu"
 K3 归档的右夹爪驱动日志可与 #20、#21 的 bag 开合命令对齐。驱动从位置写入到发送启动帧约隔 0.10 s，模拟沿用该延时。现场台架记录估计速度设为 200 时一次满行程约 1.5 s，部署的右夹爪没有可用 RS485 开口或电流读反馈。回放仍默认用原先的 0.55 s 开合斜坡。可加 `--jaw-full-stroke-s 1.5` 按命令行程比例缩放斜坡，#21 的 1.00 到 0.25 斜坡约 1.125 s。两种跑法用于比较时间敏感性，带载行程与真实接触时刻仍需视频或外部测量。
 
 #20 的腕部图像在闭合指令后约 0.73 s 仍能看到夹爪与箱体之间的间隙，约 1.23 s 两指已贴近箱边。#21 对应画面约为 0.55 s 和 1.15 s。时间按原 JPEG 文件名取近似值，局部帧间隔约 0.5 s。采用 1.5 s 满行程假设后，#21 在 CPU 和 GPU 上仍分别在开爪前约 6.5 s 和 9.7 s 失夹，和对应原斜坡对照接近。视图、逐帧来源和速度对照见 `validation/jaw_timing_sensitivity/`。
+
+## 真机放回图像对照
+
+归档 D405 图像在 #20 撤离后、#21 撤离末段仍拍到纸箱立在台面，两指已打开。对应的 360 Hz GPU 回放两箱均落到地面，最终平面偏移约 395 和 601 mm。这个对照确立了真机放回和仿真回放之间的差异。
+
+`measure_k3_placement.py` 对照人工标注的箱体边缘与固定桌边参照点，使用 D405 畸变参数和录制关节角正运动学。多视角三角化把该边缘定位在台面上方约 157–172 mm，但固定标记的自由三角化前后相差约 60–93 mm。使用 RGB-D 估计箱高做约束后，撤离时图像所见的边缘中点位移约为 9 mm（#20）和 6 mm（#21）。在箱高 ±10 mm、帧时间 ±0.10 s 的对照中，两例分别为 7–15 mm 和 1–31 mm。这些是可见边缘的估计，固定参照点仍有约 7–8 mm 的表观位移，量测结果只用于评估量级。箱体中心的放回偏差仍需带尺的固定视角测量。
+
+```bash
+cd /home/nvidia4090/ymbot_grasp
+PY=/home/nvidia4090/IsaacLab/.venv/bin/python
+D=/home/nvidia4090/real_data/k3_20261120
+V="$D/validation"
+"$PY" -B tools/measure_k3_placement.py "$D" "$V/wrist_placement/annotations.json" \
+  "$V/placement_regression_360hz_gpu" "$V/wrist_placement/measurement.json"
+```

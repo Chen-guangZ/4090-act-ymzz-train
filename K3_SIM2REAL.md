@@ -91,7 +91,7 @@ V="$D/validation/placement_regression_360hz_gpu"
   --max-placement-error-mm 20 --max-rest-motion-mm 2
 ```
 
-工具以人工抓空或夹起标签选择对应判定。夹起样本要求开爪前双指带载并离桌至少 10 cm、连续至少 1 s，随后保持到录制的首次开爪指令。撤离后要求末 0.5 s 有桌面支撑、箱体与地面和机器人已脱离，并分别报告相对原取件位置的箱体平面偏移与最后一秒内箱体中心的最大单轴位移范围。示例使用 20 mm 放回位置偏差和 2 mm 位移范围作为仿真诊断阈值，按任务要求显式传入对应数值。加 `--require-pass` 后，任一项失败时仍会写出报告，并退出为 1。现场人工标签只核验夹起，放回验收仍需同步侧视观测。
+工具以人工抓空或夹起标签选择对应判定。夹起样本要求开爪前双指带载并离桌至少 10 cm、连续至少 1 s，随后保持到录制的首次开爪指令。撤离后的末 0.5 s 要求桌面载荷中位数至少 0.1 N，任一箱底样本距台面最多 2 mm，且没有地面或机器人接触超过载荷阈值。评分分别报告相对原取件位置的箱体平面偏移与最后一秒内箱体中心的最大单轴位移范围。示例使用 20 mm 放回位置偏差和 2 mm 位移范围作为仿真诊断阈值，按任务要求显式传入对应数值。加 `--require-pass` 后，任一项失败时仍会写出报告，并退出为 1。现场人工标签只核验夹起，放回验收仍需同步侧视观测。
 
 本批 4090 MJWarp 五例均完整运行到撤离。#17 保持抓空，#18–#21 双指带载离桌至少 10 cm 的最长连续时间分别为 7.80、8.40、8.30、6.97 s。四例均在开爪指令前失夹，撤离后均无桌面支撑。逐例判定见 `validation/placement_regression_360hz_gpu/score.json`。
 
@@ -123,7 +123,7 @@ V="$D/validation"
 - CPU 的名义接触对照中，#20、#21 持续失夹前一秒的双指载荷中位数约 11.4–11.6 N，最接近摩擦锥边界的接触点利用率 P90 不到 6%。箱体在失夹前已相对手腕明显旋转。用 `--sample-pad-friction --device cpu --cone elliptic` 可复现。每个指垫记录法向力至少 0.1 N 的接触点中最大的摩擦锥用量，以及同一点的扭转分量。
 - 分块指垫、摩擦系数、夹爪推力和 60 g 名义箱重保持一致。回放启用 `--contact-impratio`，仅修改 MuJoCo 摩擦约束相对法向约束的阻抗。阻抗比 400 的 360 Hz CPU 在 #17 保持抓空，#18–#21 完成夹持到开爪及稳定放回，最终平面偏差约 7.7、3.6、9.6、3.7 mm。180 Hz 的 #20、#21 对照也通过。阻抗比用于仿真数值对照，默认回放仍沿用原求解器设置。标定仍需要真实箱体重量、质心和夹持位置。
 - 在同一候选设置下，4090 GPU 的五例首跑通过当前诊断。#18–#21 的放回偏差分别约 8.9、6.4、16.7、7.3 mm。#20 普通 GPU 核以相同配置再次运行后仍完成稳定放回，偏差约 20.6 mm，超过本轮使用的 20 mm 诊断阈值。两次结果分别在 `score_400_cuda.json` 和 `score_repeat_20_cuda.json`。`replay_clearance_20_21.png` 对比首跑与原配置的箱底轨迹。
-- #20 的 360 Hz GPU 确定性模式对照中，阻抗比 400 和 800 各运行一次，偏差分别约 17.5 和 8.7 mm，开爪前箱体倾斜约 4.9° 和 3.1°。800 目前只验证了 #20，五例候选回归仍使用 400。
+- #20 的 360 Hz GPU 确定性模式对照中，阻抗比 400 和 800 各运行一次，偏差分别约 17.5 和 8.7 mm，开爪前箱体倾斜约 4.9° 和 3.1°。
 - 在 CPU 400 对照中改用 1.5 s 满行程假设，#20、#21 仍稳定放回，平面偏差约 9.4、4.6 mm。
 - K3 的 field-4 交接资料把纸箱受夹宽估为约 30 mm，归档 RGB-D 重建的短边约 49 mm。使用 `--box-width-mm 30` 将短边对称缩到假设值后的 CPU 400 对照仍复现 #17 抓空，#20 和 #21 留在桌面，最后偏差约 19.6 和 11.6 mm。场景报告分别保存原始估计与碰撞体实际应用值，默认继续使用 RGB-D 拟合值。补测时请量同一装载状态和夹点处两面的距离。
 
@@ -141,4 +141,30 @@ done
 "$PY" -B tools/check_k3_placement.py "$D/derived" "$OUT/score_400_cuda.json" \
   "$OUT"/dynamics_{17,18,19,20,21}_400_cuda.json \
   --max-placement-error-mm 20 --max-rest-motion-mm 2 --require-pass
+```
+
+## Isaac Lab 入口与 800 回归
+
+同一套分块场景下，360 Hz、阻抗比 800 的五例独立回放在 CPU 与 GPU 均通过现有诊断。#17 保持抓空，GPU #18–#21 的最终放回偏差约为 7.2、6.5、8.5、6.6 mm。逐例报告和原始时序在 `validation/contact_impedance/replication_800/`。箱体质量继续采用 60 g 名义值，结果适用于这批已录制轨迹。
+
+Isaac Lab 的完整五例 CUDA 回放也通过。#18–#21 的最终放回偏差约为 7.3、6.4、8.4、7.0 mm，和同设置独立 GPU 回放的箱体中心轨迹最大相差小于 0.7 mm。#19 的末 0.5 s 有 4 个载荷样本为零，载荷中位数为 0.585 N，箱底一直在台面 0.27 mm 内，无地面接触。原先要求每个采样都带载的评分保留在 `score_800_cuda_strict_samples.json`。使用载荷中位数和箱底高度共同判定后，原配置中 #18–#21 落地的四例仍无法通过。报告和对照见 `validation/isaaclab_profile/`。
+
+`tools/k3_isaaclab_profile.py` 提供可由 Isaac Lab 项目调用的 `make_sim_cfg()`，默认使用 360 Hz、椭圆摩擦锥、`implicitfast`、MuJoCo 内部碰撞和阻抗比 800。调用者需加载有 2×2 指垫碰撞块的 K3 USD。当前 Isaac Lab 的内部接触管理使用 CUDA。需要 MuJoCo CPU 参考时，使用独立回放入口。
+
+要通过 Isaac Lab 的 `NewtonMJWarpManager` 验证同一轨迹，在 4090 上执行：
+
+```bash
+cd /home/nvidia4090/ymbot_grasp
+export OMNI_KIT_ACCEPT_EULA=YES
+PY=/home/nvidia4090/IsaacLab/.venv/bin/python
+D=/home/nvidia4090/real_data/k3_20261120
+S="$D/validation/pad_patch_grid/torsional"
+OUT=$(mktemp -d "$D/validation/isaaclab_profile/reproduced_XXXXXX")
+for trial in 17 18 19 20 21; do
+  "$PY" -B tools/replay_k3_grasp.py "$S/trial_$trial.usda" "$D/derived/trial_$trial" "$OUT/dynamics_$trial.json" \
+    --isaaclab --device cuda:0 --physics-hz 360 --cone elliptic --contact-impratio 800 \
+    --arm-bias-compensation --sample-contacts --through-release
+done
+"$PY" -B tools/check_k3_placement.py "$D/derived" "$OUT/score.json" \
+  "$OUT"/dynamics_{17,18,19,20,21}.json --max-placement-error-mm 20 --max-rest-motion-mm 2 --require-pass
 ```

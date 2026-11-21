@@ -1,6 +1,7 @@
 """Replay measured K3 arm motion against dynamic grasp contacts in Newton MJWarp."""
 
 import argparse
+from contextlib import ExitStack
 import csv
 from datetime import datetime
 import gzip
@@ -168,6 +169,7 @@ def main():
     parser.add_argument("trial_dir", type=Path)
     parser.add_argument("report", type=Path)
     parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--isaaclab", action="store_true", help="Step through Isaac Lab's CUDA MJWarp manager.")
     parser.add_argument("--cone", choices=("elliptic", "pyramidal"), default="pyramidal")
     parser.add_argument("--contact-impratio", type=float,
                         help="Override MuJoCo's friction-to-normal contact impedance ratio.")
@@ -186,6 +188,8 @@ def main():
     parser.add_argument("--deterministic", action="store_true",
                         help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
+    if args.isaaclab and not args.device.startswith("cuda"):
+        parser.error("--isaaclab requires a CUDA device.")
     if args.contact_impratio is not None and (not np.isfinite(args.contact_impratio) or args.contact_impratio <= 0):
         parser.error("--contact-impratio must be finite and positive.")
     if args.sample_pad_friction and (args.device != "cpu" or args.cone != "elliptic"):
@@ -196,6 +200,11 @@ def main():
         parser.error("The deterministic kernel option applies to the MJWarp GPU path.")
     if args.physics_hz < SAMPLE_HZ or args.physics_hz % SAMPLE_HZ:
         parser.error("The physics rate must be a positive multiple of 30 Hz.")
+    with ExitStack() as stack:
+        run(args, stack)
+
+
+def run(args, stack):
     dt = 1 / args.physics_hz
     sample_stride = args.physics_hz // SAMPLE_HZ
     sample_dt = sample_stride * dt
@@ -211,9 +220,17 @@ def main():
     clock = np.arange(steps) * dt
     opening = jaw_opening_track(clock, start_ns, trial["gripper_commands"], args.jaw_full_stroke_s)
 
-    builder = newton.ModelBuilder()
-    newton.solvers.SolverMuJoCo.register_custom_attributes(builder)
-    builder.add_usd(str(args.scene.resolve()), load_visual_shapes=False, enable_self_collisions=False)
+    sim = None
+    if args.isaaclab:
+        from k3_isaaclab_profile import make_sim_cfg, open_scene
+
+        cfg = make_sim_cfg(args.device, args.contact_impratio or 1.0, args.physics_hz,
+                           cone=args.cone, deterministic=args.deterministic)
+        sim, builder = open_scene(stack, args.scene, cfg)
+    else:
+        builder = newton.ModelBuilder()
+        newton.solvers.SolverMuJoCo.register_custom_attributes(builder)
+        builder.add_usd(str(args.scene.resolve()), load_visual_shapes=False, enable_self_collisions=False)
     slots = {name.rsplit("/", 1)[-1]: joint for joint, name in enumerate(builder.joint_label)}
     positions = trial["snapshot_before_close_rad"]
     tracks = read_tracks(args.trial_dir / "joint_states.csv.gz", positions,
@@ -253,19 +270,26 @@ def main():
     builder.joint_target_q[:] = controls[0].tolist()
     box = builder.body_label.index("/World/Box")
     right = next(i for i, label in enumerate(builder.body_label) if label.endswith("/Right_Arm_Link8"))
-    model = builder.finalize(args.device)
-    solver = newton.solvers.SolverMuJoCo(model, njmax=120, nconmax=120, integrator="implicitfast",
-                                       cone=args.cone, impratio=args.contact_impratio,
-                                       deterministic=wp.DeterministicMode.RUN_TO_RUN if args.deterministic else None,
-                                       disable_sensors=args.deterministic,
-                                       use_mujoco_cpu=args.device == "cpu")
+    if sim is None:
+        model = builder.finalize(args.device)
+        solver = newton.solvers.SolverMuJoCo(model, njmax=120, nconmax=120, integrator="implicitfast",
+                                           cone=args.cone, impratio=args.contact_impratio,
+                                           deterministic=wp.DeterministicMode.RUN_TO_RUN if args.deterministic else None,
+                                           disable_sensors=args.deterministic,
+                                           use_mujoco_cpu=args.device == "cpu")
+        state, following = model.state(), model.state()
+        newton.eval_fk(model, model.joint_q, model.joint_qd, state)
+        control = model.control()
+    else:
+        sim.reset()
+        manager = sim.physics_manager
+        solver = manager._solver
+        state = manager.get_state_0()
+        control = manager.get_control()
     contacts = (BoxContacts(builder, solver, args.device, args.sample_pad_friction)
                 if args.sample_contacts or args.sample_pad_friction else None)
     compensation = (ArmBiasCompensation(solver, arm_dofs, builder.joint_effort_limit)
                     if args.arm_bias_compensation else None)
-    state, following = model.state(), model.state()
-    newton.eval_fk(model, model.joint_q, model.joint_qd, state)
-    control = model.control()
     samples = []
     box_dimensions = scene.get("box_dimensions_m", scene["box_dims_m_perception_estimate"])
     half_dims = np.asarray(box_dimensions) / 2
@@ -278,8 +302,12 @@ def main():
         if compensation and i:
             compensation.apply(control)
         state.clear_forces()
-        solver.step(state, following, control, None, dt)
-        state, following = following, state
+        if sim is None:
+            solver.step(state, following, control, None, dt)
+            state, following = following, state
+        else:
+            sim.step(render=False)
+            state = manager.get_state_0()
         q = state.joint_q.numpy()
         if i % sample_stride == 0:
             pose = state.body_q.numpy()
@@ -303,6 +331,7 @@ def main():
         "arm_bias_compensation": args.arm_bias_compensation,
         "physics_hz": args.physics_hz, "sample_hz": SAMPLE_HZ,
         "solver_device": args.device,
+        "runtime": "isaaclab" if sim is not None else "newton",
         "deterministic_kernels": args.deterministic,
         "passive_linkage": passive_linkage,
         "pad_tiles_per_axis": scene.get("pad_tiles_per_axis", 1),

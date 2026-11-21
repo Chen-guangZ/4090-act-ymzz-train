@@ -14,6 +14,7 @@ LIFT_M = 0.10
 LIFT_S = 1.0
 LOSS_S = 0.25
 SUPPORT_S = 0.5
+TABLE_CLEARANCE_M = 0.002
 
 
 def intervals(mask):
@@ -51,8 +52,13 @@ def evaluate(trace, trial, label, xy_limit, motion_limit):
                      if (b - a) * dt >= LOSS_S), None)
     held_to_release = lifted is not None and lost is None and bool(bilateral[end - 1])
     tail = time > time[-1] - SUPPORT_S
-    on_table = bool(np.all((c["table_box_normal_load_n"][tail] >= CONTACT_N)
-                           & (c["floor_box_normal_load_n"][tail] < CONTACT_N)))
+    table_load = c["table_box_normal_load_n"][tail]
+    table_median_n = float(np.median(table_load))
+    floor_peak_n = float(c["floor_box_normal_load_n"][tail].max())
+    clearance_peak_m = float(np.abs(c["bottom_clearance_m"][tail]).max())
+    # The contact set can switch between sampled solver steps while the box
+    # stays on the tabletop. Check the window and geometry together.
+    on_table = table_median_n >= CONTACT_N and floor_peak_n < CONTACT_N and clearance_peak_m <= TABLE_CLEARANCE_M
     robot_load = np.maximum.reduce([c[name][tail] for name in
                                    ("left_pad_normal_load_n", "right_pad_normal_load_n",
                                     "other_robot_box_normal_load_n")])
@@ -65,6 +71,12 @@ def evaluate(trace, trial, label, xy_limit, motion_limit):
         "recorded_release_s": release,
         "sustained_loss_before_release_s": release - float(time[lost]) if lost is not None else None,
         "placement_after_retreat": placement,
+        "table_support_after_retreat": {
+            "table_normal_median_n": table_median_n,
+            "table_loaded_sample_fraction": float(np.mean(table_load >= CONTACT_N)),
+            "floor_normal_peak_n": floor_peak_n,
+            "max_absolute_table_clearance_m": clearance_peak_m,
+        },
         "checks": {
             "bilateral_lift": lifted is not None,
             "held_to_release": held_to_release,
@@ -106,6 +118,7 @@ def main():
         "passed": passed,
         "thresholds": {"lift_m": LIFT_M, "lift_s": LIFT_S, "contact_n": CONTACT_N,
                        "loss_s": LOSS_S, "table_support_s": SUPPORT_S,
+                       "max_absolute_table_clearance_mm": TABLE_CLEARANCE_M * 1000,
                        "max_placement_error_mm": limits[0], "max_rest_motion_mm": limits[1]},
         "trials": trials,
     }

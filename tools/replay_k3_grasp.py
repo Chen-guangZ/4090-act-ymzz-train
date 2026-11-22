@@ -170,6 +170,7 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--isaaclab", action="store_true", help="Step through Isaac Lab's CUDA MJWarp manager.")
+    parser.add_argument("--usd-animation", type=Path, help="Save a visual USD replay of sampled body poses.")
     parser.add_argument("--cone", choices=("elliptic", "pyramidal"), default="pyramidal")
     parser.add_argument("--contact-impratio", type=float,
                         help="Override MuJoCo's friction-to-normal contact impedance ratio.")
@@ -188,6 +189,8 @@ def main():
     parser.add_argument("--deterministic", action="store_true",
                         help="Use MJWarp's run-to-run deterministic kernel mode.")
     args = parser.parse_args()
+    if args.usd_animation is not None and args.usd_animation.exists():
+        parser.error("--usd-animation must point to a new file.")
     if args.isaaclab and not args.device.startswith("cuda"):
         parser.error("--isaaclab requires a CUDA device.")
     if args.contact_impratio is not None and (not np.isfinite(args.contact_impratio) or args.contact_impratio <= 0):
@@ -291,6 +294,7 @@ def run(args, stack):
     compensation = (ArmBiasCompensation(solver, arm_dofs, builder.joint_effort_limit)
                     if args.arm_bias_compensation else None)
     samples = []
+    animation = [] if args.usd_animation is not None else None
     box_dimensions = scene.get("box_dimensions_m", scene["box_dims_m_perception_estimate"])
     half_dims = np.asarray(box_dimensions) / 2
     q = state.joint_q.numpy()
@@ -311,6 +315,8 @@ def run(args, stack):
         q = state.joint_q.numpy()
         if i % sample_stride == 0:
             pose = state.body_q.numpy()
+            if animation is not None:
+                animation.append(pose.copy())
             clearance = bottom_height(pose[box], half_dims) - scene["table_top_world_m"]
             samples.append([float(clock[i]), *pose[box, :3].tolist(), *pose[right, :3].tolist(),
                             float(sum(q[width_q] for width_q, _, _ in fingers)), clearance])
@@ -372,6 +378,10 @@ def run(args, stack):
             "gripper_opening_m": float(tail[-1, 7]),
         }
     args.report.write_text(json.dumps(report, indent=2) + "\n")
+    if animation is not None:
+        from export_k3_animation import write_animation
+
+        write_animation(args.scene, args.usd_animation, builder.body_label, animation, SAMPLE_HZ)
     print(json.dumps({k: v for k, v in report.items() if k not in ("samples", "sample_columns")}, indent=2))
 
 

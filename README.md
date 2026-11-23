@@ -6,6 +6,8 @@
 
 第一次查看或验收请读 [4090 工作总结与验收手册](4090_ACCEPTANCE_GUIDE.md)。
 
+后续开发顺序和逐项目标见 [4090 ACT 路线图](4090_ACT_ROADMAP.md)。
+
 - 真机关节轨迹、RGB-D 快照和人工抓取标签见 `/home/nvidia4090/real_data/k3_20261120/`。
 - `tools/k3_scene.py` 根据现场记录生成含二指夹爪和纸箱碰撞体的 USD。`tools/replay_k3_grasp.py --isaaclab` 用 Isaac Lab 的 CUDA MJWarp 管理器回放完整的抓取与放回。
 - 复现命令、放回评分和物理参数来源见 [K3 现场试验回放](K3_SIM2REAL.md#isaac-lab-入口与-800-回归)。

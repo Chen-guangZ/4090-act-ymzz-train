@@ -1,0 +1,25 @@
+{
+  "observation_source": "K3 trial 21 joint feedback at the observation pose",
+  "observation_timestamp": "2026-11-20T19:13:21+08:00",
+  "scene_relative_to_data": "validation/pad_patch_grid/torsional/trial_21.usda",
+  "physics_hz": 360,
+  "action_hz": 30,
+  "contact_impratio": 800,
+  "arm_target_rate_rad_s": 0.393,
+  "box_xy_half_range_m": [0.012, 0.012],
+  "box_yaw_half_range_deg": 6.0,
+  "arm_joint_names": [
+    "Right_Arm_Joint1", "Right_Arm_Joint2", "Right_Arm_Joint3", "Right_Arm_Joint4",
+    "Right_Arm_Joint5", "Right_Arm_Joint6", "Right_Arm_Joint7"
+  ],
+  "observation_joint_rad": {
+    "Body_Joint1": -0.59595154, "Body_Joint2": 1.70530727, "Body_Joint3": 1.19612152,
+    "Body_Joint4": -0.00207029, "Neck_Joint1": 0.00009587, "Neck_Joint2": -0.50007774,
+    "Left_Arm_Joint1": -0.00824515, "Left_Arm_Joint2": -0.00019175, "Left_Arm_Joint3": 0.00038350,
+    "Left_Arm_Joint4": -0.00047937, "Left_Arm_Joint5": -0.00019175, "Left_Arm_Joint6": 0.00082393,
+    "Left_Arm_Joint7": -0.01213704,
+    "Right_Arm_Joint1": 1.23705963, "Right_Arm_Joint2": -0.70352194, "Right_Arm_Joint3": -1.66024658,
+    "Right_Arm_Joint4": -1.34702688, "Right_Arm_Joint5": 1.01338606, "Right_Arm_Joint6": 0.61560566,
+    "Right_Arm_Joint7": -1.06669189
+  }
+}

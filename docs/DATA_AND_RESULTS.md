@@ -10,6 +10,8 @@
 | `9ed0306` | 接通 Isaac Lab CUDA MJWarp 管理器，阻抗比 800 下五例通过 |
 | `884f426` | 重新验收、#21 USD 动画、只读预览和操作手册 |
 | `1aade2d` | 4090 ACT 路线图和目标 01 验收任务单 |
+| `29776cc`、`69e0bad` | 整理项目主页、逐文件说明和首轮验收证据，合并 GitHub 仓库初始化提交 |
+| 2026-11-24 · 目标 01 | 对照显示工程交接，交付可重置任务和动作接口。重置、跟踪、开合爪、张爪负例及旧五例回归均通过。下一步是几何专家。 |
 
 ## 数据存放位置
 
@@ -18,9 +20,12 @@
 | `/home/nvidia4090/ymbot_grasp/` | 4090 项目工作区 |
 | `/home/nvidia4090/IsaacLab/` | IsaacLab 源码，验证版本 `3939445`，运行 Python 为 `.venv/bin/python` |
 | `/home/nvidia4090/real_data/k3_20261120/` | 4090 的数据根目录 |
+| `/home/nvidia4090/ymbot_display/` | 独立的显示模型、网格修复报告与网页预览。复用评估见 [目标 01](K3_TASK_01.md#与-ymbot_display-的对照)。 |
 | Windows 工作区 `real_data/k3_20261120/` | 原始数据、派生输入和完整验证输出，已对照校验 1,069 个稳定文件 |
+| Windows 工作区 `4090_sync/ymbot_grasp/` | 主项目 Git 副本，与 GitHub 的 `main` 对应 |
 | Windows 工作区 `4090_sync/runtime/` | 同步前 Git bundle、IsaacLab 源码归档、源码工作区补丁与软件包版本 |
 | Windows 工作区 `4090_sync/references/` | URDF、MoveIt、驱动资料及旧演示引用素材 |
+| Windows 工作区 `夹爪信息/` | 供应商夹爪手册、机械文件和控制软件资料 |
 | Windows 工作区 `4090_WORKSPACE_STATUS.md` | 远端路径、对应本地位置和原始同步记录 |
 
 ## 数据根目录索引
@@ -39,8 +44,9 @@
 | `validation/contact_impedance/` | 阻抗敏感性、不同步长和 CPU/GPU 对照 |
 | `validation/isaaclab_profile/` | Isaac Lab 管理器回放、评分和独立 GPU 对照 |
 | `validation/acceptance_demo/` | 最后五例评分、#21 动画 USD、截图和运行日志 |
+| `validation/task_01/` | 目标 01 重验产物，包括新动作任务和原五例回归，详见 [目录说明](K3_TASK_01.md#验收产物) |
 
-公开仓库保留代码、USD 资产和下面四份小型仿真验收证据。两个原始真机归档各超过 100 MB，包含现场记录，保存在既有 4090 与 Windows 数据备份。部分 USD 使用 Ubuntu 绝对引用，更换路径时需重建校准场景或重定位引用。
+公开仓库保留主项目代码、USD 资产和精简的仿真验收证据。两个原始真机归档各超过 100 MB，包含现场记录，保存在既有 4090 与 Windows 数据备份。部分 USD 使用 Ubuntu 绝对引用，更换路径时需重建校准场景或重定位引用。
 
 原始 bag 适合复现和时序对照。目前缺连续双相机流和逐帧实际下发的右臂命令。双相机 ACT 的训练样本来自后续仿真生成或同步实采。
 
@@ -49,3 +55,4 @@
 - [五例评分](results/score_all.json) 来自 `validation/acceptance_demo`，保留原报告中的阈值、逐例检查和数据根目录下的轨迹引用。
 - [运行入口对照](results/runtime_comparison.json) 来自 `validation/isaaclab_profile`，比较独立 MJWarp GPU 与 Isaac Lab 管理器。
 - [抬升截图](results/preview_lift.jpg) 和 [放回截图](results/preview_place.jpg) 来自 #21 的 Isaac Sim 渲染。
+- [目标 01 评分](results/task01_score.json)、[重跑五例评分](results/task01_replay_regression.json) 和 [动作录像](results/task01_motion.gif) 来自 `validation/task_01`。

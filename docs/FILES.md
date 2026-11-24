@@ -14,10 +14,15 @@
 | `K3_SIM2REAL.md` | K3 仿真技术记录，含校准、接触试验、求解参数、对照结果和复现方法。 |
 | `docs/FILES.md` | 当前这份文件索引。 |
 | `docs/DATA_AND_RESULTS.md` | 外置数据、4090 路径、里程碑及验收证据来源。 |
+| `docs/K3_TASK_01.md` | 显示模型复用评估、可重置仿真任务及验收方法。 |
+| `config/k3_box_task_01.json` | #21 场景、实测观察位、动作频率和箱位随机化参数。 |
 | `docs/results/score_all.json` | 五例验收结果、阈值和每项检查。 |
 | `docs/results/runtime_comparison.json` | Isaac Lab 管理器和独立 MJWarp GPU 的五例对照。 |
 | `docs/results/preview_lift.jpg` | #21 抬起纸箱时的仿真截图。 |
 | `docs/results/preview_place.jpg` | #21 将纸箱放回台面时的仿真截图。 |
+| `docs/results/task01_score.json` | 目标 01 的重置一致性、动作跟踪、固定姿态和张爪负例评分。 |
+| `docs/results/task01_replay_regression.json` | 加入目标 01 后复跑 #17–#21 的逐例回归评分。 |
+| `docs/results/task01_motion.gif` | 第一条重置测试中，右臂响应指令并完成夹爪开合的仿真录像。 |
 
 ## USD 与纹理
 
@@ -57,11 +62,13 @@
 | 文件 | 作用 |
 |---|---|
 | `tools/k3_isaaclab_profile.py` | 配置 Isaac Lab CUDA MJWarp 管理器，支持导入、步进和参数核验。 |
+| `tools/k3_box_task.py` | 目标 01 的 reset/step 任务、右臂和夹爪动作接口及状态诊断。 |
+| `tools/run_k3_box_task.py` | 执行重置、右臂跟踪、夹爪开合和张爪负例，并生成日志、动画与评分。 |
 | `tools/replay_k3_grasp.py` | 回放真机关节与夹爪指令，通过独立 Newton 或 Isaac Lab 求解，输出姿态和接触数据 JSON。 |
 | `tools/check_k3_placement.py` | 对抓空、带载抬升、保持到开爪、撤离后支撑和位置误差评分。 |
 | `tools/export_k3_animation.py` | 将求解后的机器人和纸箱位姿写成可播放的 USD 动画。 |
 | `tools/render_k3_scene.py` | 使用 Isaac Sim 离屏渲染校准后的头部或腕部相机静态图。 |
-| `tools/show_k3_animation.py` | 在 Isaac Sim 循环播放动画，可离屏更新浏览器预览帧。 |
+| `tools/show_k3_animation.py` | 在 Isaac Sim 播放动画，支持离屏浏览器预览帧与 GIF 录像。 |
 | `tools/serve_k3_view.py` | 通过本机回环 HTTP 端口提供只读预览页面和当前帧。 |
 | `tools/run_k3_preview.sh` | 在 Ubuntu 启动渲染器和预览服务，统一管理这两个进程。 |
 | `tools/add_wrist_camera.py` | 早期演示资产的腕部相机注入工具。 |

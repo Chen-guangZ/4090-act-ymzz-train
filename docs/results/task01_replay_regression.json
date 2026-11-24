@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "thresholds": {
+    "lift_m": 0.1,
+    "lift_s": 1.0,
+    "contact_n": 0.1,
+    "loss_s": 0.25,
+    "table_support_s": 0.5,
+    "max_absolute_table_clearance_mm": 2.0,
+    "max_placement_error_mm": 20.0,
+    "max_rest_motion_mm": 2.0
+  },
+  "trials": {
+    "17": {
+      "trace": "/home/nvidia4090/real_data/k3_20261120/validation/task_01/replay_17.json",
+      "operator_hold_label": "failed",
+      "checks": {
+        "no_sustained_lift": true
+      },
+      "passed": true
+    },
+    "18": {
+      "trace": "/home/nvidia4090/real_data/k3_20261120/validation/task_01/replay_18.json",
+      "operator_hold_label": "held",
+      "recorded_release_s": 28.842209274000002,
+      "sustained_loss_before_release_s": null,
+      "placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010821434794827667,
+        "box_xy_offset_from_pickup_m": 0.00714020819525997,
+        "box_max_motion_last_second_m": 6.51925802230835e-05,
+        "gripper_opening_m": 0.08799953758716583
+      },
+      "table_support_after_retreat": {
+        "table_normal_median_n": 0.5885980129241943,
+        "table_loaded_sample_fraction": 1.0,
+        "floor_normal_peak_n": 0.0,
+        "max_absolute_table_clearance_m": 0.00010825441303019545
+      },
+      "checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "passed": true
+    },
+    "19": {
+      "trace": "/home/nvidia4090/real_data/k3_20261120/validation/task_01/replay_19.json",
+      "operator_hold_label": "held",
+      "recorded_release_s": 29.007491075,
+      "sustained_loss_before_release_s": null,
+      "placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010821652974990492,
+        "box_xy_offset_from_pickup_m": 0.0064681465710822745,
+        "box_max_motion_last_second_m": 2.3849308490753174e-05,
+        "gripper_opening_m": 0.08800071477890015
+      },
+      "table_support_after_retreat": {
+        "table_normal_median_n": 0.5885977745056152,
+        "table_loaded_sample_fraction": 1.0,
+        "floor_normal_peak_n": 0.0,
+        "max_absolute_table_clearance_m": 0.00010824210202386997
+      },
+      "checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "passed": true
+    },
+    "20": {
+      "trace": "/home/nvidia4090/real_data/k3_20261120/validation/task_01/replay_20.json",
+      "operator_hold_label": "held",
+      "recorded_release_s": 54.444810534000005,
+      "sustained_loss_before_release_s": null,
+      "placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010813699087641737,
+        "box_xy_offset_from_pickup_m": 0.008489797381506375,
+        "box_max_motion_last_second_m": 6.36465847492218e-05,
+        "gripper_opening_m": 0.08800016343593597
+      },
+      "table_support_after_retreat": {
+        "table_normal_median_n": 0.5886002779006958,
+        "table_loaded_sample_fraction": 1.0,
+        "floor_normal_peak_n": 0.0,
+        "max_absolute_table_clearance_m": 0.00010820750821727287
+      },
+      "checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "passed": true
+    },
+    "21": {
+      "trace": "/home/nvidia4090/real_data/k3_20261120/validation/task_01/replay_21.json",
+      "operator_hold_label": "held",
+      "recorded_release_s": 28.889372919000003,
+      "sustained_loss_before_release_s": null,
+      "placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010819955943197623,
+        "box_xy_offset_from_pickup_m": 0.006830582384679138,
+        "box_max_motion_last_second_m": 1.57281756401062e-05,
+        "gripper_opening_m": 0.08799994736909866
+      },
+      "table_support_after_retreat": {
+        "table_normal_median_n": 0.5886002779006958,
+        "table_loaded_sample_fraction": 1.0,
+        "floor_normal_peak_n": 0.0,
+        "max_absolute_table_clearance_m": 0.00010822722367209714
+      },
+      "checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "passed": true
+    }
+  }
+}

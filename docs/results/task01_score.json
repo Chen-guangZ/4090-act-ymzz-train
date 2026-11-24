@@ -1,0 +1,48 @@
+{
+  "same_seed_reset_matches": true,
+  "different_seed_changes_box_position": true,
+  "same_seed_observation_max_abs_diff": 0.0,
+  "motion": [
+    {
+      "max_fixed_joint_drift_rad": 0.00036394596099853516,
+      "max_base_translation_m": 0.0,
+      "max_base_quaternion_delta": 0.0,
+      "fixed_pose_pass": true,
+      "tracking_error_rad": 7.997387696523361e-07,
+      "closed_gap_m": 0.026000000536441803,
+      "reopened_gap_m": 0.0879983901977539,
+      "passed": true
+    },
+    {
+      "max_fixed_joint_drift_rad": 0.00036394596099853516,
+      "max_base_translation_m": 0.0,
+      "max_base_quaternion_delta": 0.0,
+      "fixed_pose_pass": true,
+      "tracking_error_rad": 7.997387696523361e-07,
+      "closed_gap_m": 0.026000001467764378,
+      "reopened_gap_m": 0.0879983901977539,
+      "passed": true
+    },
+    {
+      "max_fixed_joint_drift_rad": 0.00036394596099853516,
+      "max_base_translation_m": 0.0,
+      "max_base_quaternion_delta": 0.0,
+      "fixed_pose_pass": true,
+      "tracking_error_rad": 7.997387696523361e-07,
+      "closed_gap_m": 0.026000000536441803,
+      "reopened_gap_m": 0.0879983901977539,
+      "passed": true
+    }
+  ],
+  "open_jaw": {
+    "max_fixed_joint_drift_rad": 0.0003230571746826172,
+    "max_base_translation_m": 0.0,
+    "max_base_quaternion_delta": 0.0,
+    "fixed_pose_pass": true,
+    "termination": "grasp_empty",
+    "minimum_jaw_gap_m": 0.08793677017092705,
+    "max_clearance_m": -0.00010727470923455051,
+    "passed": true
+  },
+  "passed": true
+}

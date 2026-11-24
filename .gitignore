@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 logs/
+/real_data/
+/4090_sync/
+/.venv/
+*.bundle

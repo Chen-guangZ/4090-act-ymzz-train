@@ -1,0 +1,156 @@
+{
+  "direct_passed": true,
+  "isaaclab_passed": true,
+  "trials": {
+    "17": {
+      "direct_checks": {
+        "no_sustained_lift": true
+      },
+      "isaaclab_checks": {
+        "no_sustained_lift": true
+      },
+      "direct_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010821702077246087,
+        "box_xy_offset_from_pickup_m": 0.00845503481410177,
+        "box_max_motion_last_second_m": 3.039836883544922e-06,
+        "gripper_opening_m": 0.08800147473812103
+      },
+      "isaaclab_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010824450912172434,
+        "box_xy_offset_from_pickup_m": 0.008253330135047617,
+        "box_max_motion_last_second_m": 3.2104551792144775e-05,
+        "gripper_opening_m": 0.08800147473812103
+      },
+      "box_position_delta_m_median": 0.00028759730290417977,
+      "box_position_delta_m_max": 0.0010088290596727127
+    },
+    "18": {
+      "direct_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "isaaclab_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "direct_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010823793524783465,
+        "box_xy_offset_from_pickup_m": 0.007148808749784902,
+        "box_max_motion_last_second_m": 2.682209014892578e-06,
+        "gripper_opening_m": 0.08799953758716583
+      },
+      "isaaclab_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010817149540331972,
+        "box_xy_offset_from_pickup_m": 0.007254369309071702,
+        "box_max_motion_last_second_m": 2.3916363716125488e-05,
+        "gripper_opening_m": 0.08799953758716583
+      },
+      "box_position_delta_m_median": 3.118823615151494e-05,
+      "box_position_delta_m_max": 0.000405902681221872
+    },
+    "19": {
+      "direct_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "isaaclab_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "direct_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010745396541211871,
+        "box_xy_offset_from_pickup_m": 0.006539545244334099,
+        "box_max_motion_last_second_m": 6.774067878723145e-05,
+        "gripper_opening_m": 0.08800071477890015
+      },
+      "isaaclab_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00016307496040701697,
+        "box_xy_offset_from_pickup_m": 0.006356375395154327,
+        "box_max_motion_last_second_m": 0.0001519322395324707,
+        "gripper_opening_m": 0.08800071477890015
+      },
+      "box_position_delta_m_median": 9.812638727495093e-05,
+      "box_position_delta_m_max": 0.0003699823857463058
+    },
+    "20": {
+      "direct_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "isaaclab_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "direct_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010820271759448552,
+        "box_xy_offset_from_pickup_m": 0.008449829375270642,
+        "box_max_motion_last_second_m": 2.6285648345947266e-05,
+        "gripper_opening_m": 0.08800016343593597
+      },
+      "isaaclab_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010817370728966047,
+        "box_xy_offset_from_pickup_m": 0.008381120687555338,
+        "box_max_motion_last_second_m": 6.34118914604187e-05,
+        "gripper_opening_m": 0.08800016343593597
+      },
+      "box_position_delta_m_median": 6.6221439344035e-05,
+      "box_position_delta_m_max": 0.0004808990515791199
+    },
+    "21": {
+      "direct_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "isaaclab_checks": {
+        "bilateral_lift": true,
+        "held_to_release": true,
+        "supported_by_table_after_retreat": true,
+        "clear_of_robot_after_retreat": true,
+        "within_pickup_xy_tolerance": true,
+        "within_rest_motion_tolerance": true
+      },
+      "direct_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00010814953510707159,
+        "box_xy_offset_from_pickup_m": 0.006623281763229067,
+        "box_max_motion_last_second_m": 0.0001620650291442871,
+        "gripper_opening_m": 0.08799994736909866
+      },
+      "isaaclab_placement_after_retreat": {
+        "box_bottom_clearance_m": -0.00012287605485206132,
+        "box_xy_offset_from_pickup_m": 0.007030730472530862,
+        "box_max_motion_last_second_m": 0.00019991397857666016,
+        "gripper_opening_m": 0.08799994736909866
+      },
+      "box_position_delta_m_median": 3.8768146968750496e-05,
+      "box_position_delta_m_max": 0.0006172692850228814
+    }
+  }
+}

@@ -1,53 +1,49 @@
-# YMBot-D 视觉抓取项目（Isaac Lab 3.0）
+# YMBot-D 4090 抓取仿真与 ACT 工程
 
-目标：轮式人形机器人（上身）用**头部双目 + 手腕相机**的视觉反馈，RL 学会用 RS485 二指夹爪抓取桌上的快递盒，并支持仿真数据采集。
+用 K3 真机记录在 RTX 4090 上复现纸箱抓取、抬升、放回和撤离。机器人、二指夹爪、桌面、纸箱和头腕相机通过 USD 组织，物理回放使用 Isaac Lab 的 CUDA MJWarp 管理器。
 
-## K3 真机对齐与回放
+| 入口 | 内容 |
+|---|---|
+| [4090 验收手册](4090_ACCEPTANCE_GUIDE.md) | 登录、预览、复现单例和五例、评分 |
+| [逐文件说明](docs/FILES.md) | 各提交文件的用途和关联入口 |
+| [数据和工作进度](docs/DATA_AND_RESULTS.md) | 数据位置、备份范围、结果来源和提交里程碑 |
+| [K3 技术记录](K3_SIM2REAL.md) | 真机标定、接触诊断、求解参数和对照实验 |
+| [ACT 路线图](4090_ACT_ROADMAP.md) | 可重置任务、双相机数据、ACT 训练和实机联调 |
 
-第一次查看或验收请读 [4090 工作总结与验收手册](4090_ACCEPTANCE_GUIDE.md)。
+## 当前结果
 
-后续开发顺序和逐项目标见 [4090 ACT 路线图](4090_ACT_ROADMAP.md)。
+4090 在 360 Hz、椭圆摩擦锥、阻抗比 800 下通过五例回放验收。#17 复现抓空，#18–#21 保持到开爪并稳定放回，平面偏差分别为 **7.57、6.23、8.19、7.17 mm**。这次验收的位置误差阈值为 20 mm，撤离后箱体移动阈值为 2 mm。[原评分](docs/results/score_all.json)
 
-- 真机关节轨迹、RGB-D 快照和人工抓取标签见 `/home/nvidia4090/real_data/k3_20261120/`。
-- `tools/k3_scene.py` 根据现场记录生成含二指夹爪和纸箱碰撞体的 USD。`tools/replay_k3_grasp.py --isaaclab` 用 Isaac Lab 的 CUDA MJWarp 管理器回放完整的抓取与放回。
-- 复现命令、放回评分和物理参数来源见 [K3 现场试验回放](K3_SIM2REAL.md#isaac-lab-入口与-800-回归)。
+| #21 抬升 | #21 放回 |
+|---|---|
+| ![#21 仿真抬升](docs/results/preview_lift.jpg) | ![#21 仿真放回](docs/results/preview_place.jpg) |
 
-## 原始演示场景（v0.3）
+当前成果覆盖现场轨迹驱动的物理回放。下一阶段是做一个可重置、能接收新动作的抓取任务，再接几何专家和 ACT。
 
-- ✅ 场景 `assets/scene_table_box.usda`：机器人 + 白色桌面（顶面 z=1.0m）+ **6.5cm 牛皮纸箱**（按真机夹爪最大开口 ~8cm 留抓取余量）+ 地面 + 灯光
-- ✅ 相机：头部双目 HeadCamL/R（基线 8cm，来自推盒项目 3a 验证版）+ 腕部 WristCam（挂 Right_Arm_Link8，沿指方向）
-- ✅ 渲染验证 `tools/render_check.py`（无头出图 + 包围盒检查）
-- 此演示场景使用整块夹爪和视觉纸箱。二指关节和纸箱物理资产由上面的 K3 场景脚本生成。RL 环境、训练和视觉观测策略仍在规划中。
+## 在 4090 复现 #21
 
-## 目录
-
-```
-assets/
-├── scene_table_box.usda      # 主场景（GUI 直接打开这个文件）
-├── ymbot_d_rl/               # 机器人资产副本（含双目+WristCam）
-├── table_white.usda          # 白色桌面（复用推盒桌板网格）
-├── box_cardboard.usda        # 纸箱外观资产（视觉用）
-└── textures/                 # 白桌面/纸箱纹理
-tools/
-├── add_wrist_camera.py       # 腕部相机注入（一次性，已执行）
-├── make_scene_props.py       # 生成白桌/纸箱纹理与资产副本
-└── render_check.py           # 无头渲染验证
-```
-
-## 常用命令
+需要先有 IsaacLab 环境和 K3 数据备份。下面使用已验证的 4090 工作目录。更换路径时先按 [数据和工作进度](docs/DATA_AND_RESULTS.md) 核对 USD 引用。
 
 ```bash
-# GUI 里打开场景：File → Open → /home/nvidia4090/ymbot_grasp/assets/scene_table_box.usda
-# （不要在 GUI 里 File→Save 覆盖源文件！改动走脚本+git）
+cd /home/nvidia4090/ymbot_grasp
+export OMNI_KIT_ACCEPT_EULA=YES
+PY=/home/nvidia4090/IsaacLab/.venv/bin/python
+D=/home/nvidia4090/real_data/k3_20261120
+S="$D/validation/pad_patch_grid/torsional"
+OUT=$(mktemp -d "$D/validation/acceptance_XXXXXX")
 
-# 渲染验证（无头）
-OMNI_KIT_ACCEPT_EULA=YES /home/nvidia4090/IsaacLab/.venv/bin/python /home/nvidia4090/ymbot_grasp/tools/render_check.py
+"$PY" -B tools/replay_k3_grasp.py "$S/trial_21.usda" "$D/derived/trial_21" "$OUT/dynamics_21.json" \
+  --isaaclab --device cuda:0 --physics-hz 360 --cone elliptic --contact-impratio 800 \
+  --arm-bias-compensation --sample-contacts --through-release \
+  --usd-animation "$OUT/K3_Trial21_Replay.usda"
+"$PY" -B tools/check_k3_placement.py "$D/derived" "$OUT/score_21.json" "$OUT/dynamics_21.json" \
+  --max-placement-error-mm 20 --max-rest-motion-mm 2 --require-pass
 ```
 
-## 规划（详见 /home/nvidia4090/HANDOFF.md 总交接文档）
+查看 `score_21.json` 的 `passed` 和逐项 `checks`。完整验收按 [验收手册](4090_ACCEPTANCE_GUIDE.md) 再运行 #17–#20，生成新的 `score_all.json`。
 
-① 夹爪 2 指 prismatic（0-8cm 开口）+ 盒子物理资产（~60g）+ 物理可行性验证
-② RL 环境（8 维动作：7 臂关节+1 夹爪）+ 奖励（距离引导→抬升成功）
-③ One-shot 初始化课程 W0→W3（手预摆盒上方 → 位置渐宽随机）
-④ 视觉观测版（头双目+腕相机替换真值，复用 ymbot_push perception 模块）
-⑤ 真机数据对齐（姿态快照/桌高/盒尺寸，见总交接文档 §6）
+## 项目布局
+
+- `assets/` 保存机器人 USD、纹理和早期桌面演示。演示入口是 `assets/scene_table_box.usda`。
+- `tools/` 保存数据准备、标定、场景生成、仿真、评分和预览入口。
+- `docs/` 保存逐文件索引和小型验收证据。完整原始归档和生成实验数据位于 [既有备份](docs/DATA_AND_RESULTS.md)。
